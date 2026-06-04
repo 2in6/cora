@@ -10,7 +10,21 @@ return function(Cora)
     local Window       = Cora.Window
     local Options      = Library.Options
 
-    local SettingsTab = Window:AddTab("Settings", "settings-2")
+    -- Custom gear icon: download -> usable asset (same trick as the moon).
+    -- Falls back to lucide "settings" if the executor lacks custom assets.
+    local gearIcon = "settings"
+    pcall(function()
+        if writefile and getcustomasset then
+            if not (isfile and isfile("cora_gear.png")) then
+                writefile("cora_gear.png", game:HttpGet(
+                    "https://i.ibb.co/LDcRHNM0/settings-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                ))
+            end
+            gearIcon = getcustomasset("cora_gear.png")
+        end
+    end)
+
+    local SettingsTab = Window:AddTab("Settings", gearIcon)
     Cora.Tabs.Settings = SettingsTab
 
     -- ── Menu / keybind section ──────────────────────────────
