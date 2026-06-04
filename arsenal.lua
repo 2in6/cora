@@ -14,6 +14,19 @@ local Debris=game:GetService('Debris')
 local localPlayer=Players.LocalPlayer
 local camera=workspace.CurrentCamera
 
+local function makeKeyPicker(gb,text,idx,onOn,onOff)
+    local lbl=gb:AddLabel(text)
+    lbl:AddKeyPicker(idx,{Default='None',Mode='Toggle',Text=text,NoUI=false,
+        ChangedCallback=function(new) if typeof(new)=='EnumItem' and new.EnumType==Enum.KeyCode then if isUnbindKey(new) then Options[idx]:SetValue({'None',Options[idx].Mode or 'Toggle'}) end end end})
+    local last=nil
+    Library:GiveSignal(RunService.Heartbeat:Connect(function()
+        if not Options[idx] then return end
+        local st=Options[idx]:GetState()
+        if st~=last then last=st if st then onOn() else onOff() end end
+    end))
+    return lbl
+end
+
 local gameName=Cora.gameName
 local titleMap={arsenal='Arsenal',nights='99 Nights in the Forest',doors='Doors',unsupported='Unsupported'}
 local windowTitle='Cora - '..(titleMap[gameName] or 'Unsupported')
