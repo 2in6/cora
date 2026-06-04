@@ -10,7 +10,7 @@ return function(Cora)
     local Window       = Cora.Window
     local Options      = Library.Options
 
-    local SettingsTab = Window:AddTab("Settings", "cog")
+    local SettingsTab = Window:AddTab("Settings", "settings-2")
     Cora.Tabs.Settings = SettingsTab
 
     -- ── Menu / keybind section ──────────────────────────────
