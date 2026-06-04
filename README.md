@@ -1,3 +1,1 @@
-info:
-loader loadstring:
-loadstring(game:HttpGet("https://raw.githubusercontent.com/2in6/cora/main/loader.lua"))()
+if you somehow found this, congrats, however i did put in effort to try to hide this so if you could, don't leak the code :)
