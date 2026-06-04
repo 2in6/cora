@@ -65,7 +65,8 @@ return function(Cora)
     ThemeManager:SetFolder("Cora")
     SaveManager:SetFolder("Cora")
 
-    -- Tabs
+    -- Tabs (order = creation order)
+    Cora.fetch("maintab.lua")()(Cora)
     Cora.fetch("settings.lua")()(Cora)
 
     -- Autoload config, then re-assert the white accent so it wins
