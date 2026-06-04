@@ -50,7 +50,7 @@ repeat task.wait() until localPlayer.Character
 local RemotesFolder = ReplicatedStorage:FindFirstChild("EntityInfo") or ReplicatedStorage:FindFirstChild("Bricks") or ReplicatedStorage:FindFirstChild("RemotesFolder")
 local Floor       = ReplicatedStorage:WaitForChild("GameData"):WaitForChild("Floor")
 local LatestRoom  = ReplicatedStorage:WaitForChild("GameData"):WaitForChild("LatestRoom")
-local MainGame    = localPlayer:WaitForChild("PlayerGui"):WaitForChild("MainUI").Initiator:WaitForChild("Main_Game")
+local MainGame    = localPlayer:WaitForChild("PlayerGui"):WaitForChild("MainUI"):WaitForChild("Initiator"):WaitForChild("Main_Game")
 local RemoteListener = MainGame:WaitForChild("RemoteListener")
 local ClientModules  = ReplicatedStorage:FindFirstChild("ModulesClient") or ReplicatedStorage:FindFirstChild("ClientModules")
 local MotorReplication = RemotesFolder:WaitForChild("MotorReplication")
