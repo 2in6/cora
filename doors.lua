@@ -1,3 +1,32 @@
+local Cora = getgenv().Cora
+assert(Cora and Cora.Library, "[Cora] Library missing - loader failed")
+local Library, ThemeManager, SaveManager = Cora.Library, Cora.ThemeManager, Cora.SaveManager
+local Options, Toggles = Library.Options, Library.Toggles
+
+local Players=game:GetService('Players')
+local UserInputService=game:GetService('UserInputService')
+local RunService=game:GetService('RunService')
+local HttpService=game:GetService('HttpService')
+local ReplicatedStorage=game:GetService('ReplicatedStorage')
+local Lighting=game:GetService('Lighting')
+local PathfindingService=game:GetService('PathfindingService')
+local Debris=game:GetService('Debris')
+local localPlayer=Players.LocalPlayer
+local camera=workspace.CurrentCamera
+
+local gameName=Cora.gameName
+local titleMap={arsenal='Arsenal',nights='99 Nights in the Forest',doors='Doors',unsupported='Unsupported'}
+local windowTitle='Cora - '..(titleMap[gameName] or 'Unsupported')
+local configFolder='CoraHub/'..tostring(game.PlaceId)
+
+local character=localPlayer.Character or localPlayer.CharacterAdded:Wait()
+local humanoid=character:WaitForChild('Humanoid')
+local rootPart=character:WaitForChild('HumanoidRootPart')
+localPlayer.CharacterAdded:Connect(function(c) character=c humanoid=c:WaitForChild('Humanoid') rootPart=c:WaitForChild('HumanoidRootPart') end)
+
+local Window=Library:CreateWindow({Title=windowTitle,Center=true,AutoShow=true,TabPadding=8,MenuFadeTime=0.2})
+local Tabs={}
+
 Tabs.DPlayer=Window:AddTab('Player') Tabs.DBypass=Window:AddTab('Bypass') Tabs.DVisuals=Window:AddTab('Visuals') Tabs.DFloor=Window:AddTab('Floor')
 
 local ExecutorSupport = loadstring(game:HttpGet("https://raw.githubusercontent.com/TheHunterSolo1/Scripts/refs/heads/main/ExecutorTest"))()
