@@ -1,4 +1,4 @@
-local BASE = "https://raw.githubusercontent.com/2in6/cora/main/"
+local BASE = "https://raw.githubusercontent.com/2in6/cora/refs/heads/main/"
 local repo = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
 
 local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
