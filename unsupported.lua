@@ -1,5 +1,7 @@
 local Cora = getgenv().Cora
+assert(Cora and Cora.Library, "[Cora] Library missing - loader failed")
 local Library, ThemeManager, SaveManager = Cora.Library, Cora.ThemeManager, Cora.SaveManager
+local Options, Toggles = Library.Options, Library.Toggles
 
 local Players=game:GetService('Players')
 local UserInputService=game:GetService('UserInputService')
