@@ -1,4 +1,4 @@
-local repo = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
+local repo = "https://raw.githubusercontent.com/mstudio45/Obsidian/main/"
 
 local Junkie=loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
 Junkie.service="Cora" Junkie.identifier="1118494" Junkie.provider="Cora"
@@ -69,7 +69,7 @@ local Options,Toggles=Library.Options,Library.Toggles
 local configFolder='CoraHub/Doors'
 local Window=Library:CreateWindow({Title='Cora - Doors',Center=true,AutoShow=true,TabPadding=8,MenuFadeTime=0.2})
 local Tabs={DPlayer=Window:AddTab('Player'),DBypass=Window:AddTab('Bypass'),DVisuals=Window:AddTab('Visuals'),DFloor=Window:AddTab('Floor')}
-local function Notify(t,m) Library:Notify(t..': '..m,4) end
+local function Notify(t,m) local ok=pcall(function() Library:Notify({Title="Cora",Description=t..": "..m,Time=4}) end) if not ok then pcall(function() Library:Notify(t..": "..m,4) end) end end
 
 -- ============ DOORS ============
 local ExecutorSupport=loadstring(game:HttpGet("https://raw.githubusercontent.com/TheHunterSolo1/Scripts/refs/heads/main/ExecutorTest"))()
@@ -261,13 +261,19 @@ table.insert(Connections,localPlayer:GetAttributeChangedSignal("CurrentRoom"):Co
 
 -- ============ SETTINGS ============
 Tabs.Settings=Window:AddTab('Settings')
-local MenuBox=Tabs.Settings:AddLeftGroupbox('Menu') local ThemeBox=Tabs.Settings:AddLeftGroupbox('Theme')
+local MenuBox=Tabs.Settings:AddLeftGroupbox('Menu')
 MenuBox:AddLabel('UI Toggle Key'):AddKeyPicker('MenuKeybind',{Default='RightControl',NoUI=true,Text='UI Toggle Key'})
 Library.ToggleKeybind=Options.MenuKeybind
 MenuBox:AddButton({Text='Unload',Func=function() for _,c in pairs(Connections) do pcall(function() c:Disconnect() end) end pcall(function() ESPLibrary:Unload() end) Library:Unload() end})
-ThemeManager.BuiltInThemes['Cora']={1,HttpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a1a2e","AccentColor":"e8e8ff","BackgroundColor":"0f0f1a","OutlineColor":"2a2a4a"}')}
-ThemeManager:SetLibrary(Library) ThemeManager:SetFolder('CoraHub') ThemeManager:ApplyToGroupbox(ThemeBox)
-SaveManager:SetLibrary(Library) SaveManager:IgnoreThemeSettings() SaveManager:SetIgnoreIndexes({'MenuKeybind'})
-SaveManager:SetFolder(configFolder) SaveManager:BuildConfigSection(Tabs.Settings)
-ThemeManager:ApplyTheme('Cora') SaveManager:LoadAutoloadConfig()
+pcall(function()
+    ThemeManager:SetLibrary(Library)
+    SaveManager:SetLibrary(Library)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({'MenuKeybind'})
+    ThemeManager:SetFolder('CoraHub')
+    SaveManager:SetFolder(configFolder)
+    ThemeManager:ApplyToTab(Tabs.Settings)
+    SaveManager:BuildConfigSection(Tabs.Settings)
+    SaveManager:LoadAutoloadConfig()
+end)
 Notify("Doors","Loaded for "..(isBricks and "Backdoor" or CurrentFloor))
