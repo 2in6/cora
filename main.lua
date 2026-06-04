@@ -64,7 +64,7 @@ return function(Cora)
     SaveManager:SetFolder("Cora")
 
     -- Load tabs
-    Cora.fetch("src/tabs/settings.lua")()(Cora)
+    Cora.fetch("settings.lua")()(Cora)
 
     -- Load the autoloaded config (if any) after everything is built
     pcall(function() SaveManager:LoadAutoloadConfig() end)
