@@ -23,10 +23,10 @@ local function buildKeyUI()
     Instance.new('UICorner',M).CornerRadius=UDim.new(0,6)
     local ab=Instance.new('Frame') ab.Size=UDim2.new(1,0,0,2) ab.BackgroundColor3=Color3.fromRGB(232,232,255) ab.BorderSizePixel=0 ab.ZIndex=12 ab.Parent=M
     Instance.new('UIStroke',M).Color=Color3.fromRGB(42,42,74)
-    local function lbl(t,y,sz,col,xa) local l=Instance.new('TextLabel') l.Size=UDim2.new(1,-40,0,sz==22 and 30 or 20) l.Position=UDim2.fromOffset(0,y) l.BackgroundTransparency=1 l.Font=Enum.Font.Code l.Text=t l.TextColor3=col or Color3.fromRGB(255,255,255) l.TextSize=sz l.TextXAlignment=xa or Enum.TextXAlignment.Center l.ZIndex=12 l.Parent=M return l end
-    lbl('Cora',16,22) lbl('Key System',46,13,Color3.fromRGB(140,140,180))
+    local function lbl(t,y,sz,col,xa,xoff) local l=Instance.new('TextLabel') l.Size=UDim2.new(1,-40,0,sz==22 and 30 or 20) l.Position=UDim2.fromOffset(xoff or 20,y) l.BackgroundTransparency=1 l.Font=Enum.Font.Code l.Text=t l.TextColor3=col or Color3.fromRGB(255,255,255) l.TextSize=sz l.TextXAlignment=xa or Enum.TextXAlignment.Center l.ZIndex=12 l.Parent=M return l end
+    lbl('Cora',16,22,nil,Enum.TextXAlignment.Center,0) lbl('Key System',46,13,Color3.fromRGB(140,140,180),Enum.TextXAlignment.Center,0)
     local div=Instance.new('Frame') div.Size=UDim2.new(1,-40,0,1) div.Position=UDim2.fromOffset(20,72) div.BackgroundColor3=Color3.fromRGB(42,42,74) div.BorderSizePixel=0 div.ZIndex=12 div.Parent=M
-    lbl('Enter your key to continue.',84,12,Color3.fromRGB(140,140,180),Enum.TextXAlignment.Left)
+    lbl('Enter your key to continue.',84,12,Color3.fromRGB(140,140,180),Enum.TextXAlignment.Left,20)
     local ibg=Instance.new('Frame') ibg.Size=UDim2.new(1,-40,0,36) ibg.Position=UDim2.fromOffset(20,112) ibg.BackgroundColor3=Color3.fromRGB(26,26,46) ibg.BorderSizePixel=0 ibg.ZIndex=12 ibg.Parent=M
     Instance.new('UICorner',ibg).CornerRadius=UDim.new(0,4)
     local iout=Instance.new('UIStroke') iout.Color=Color3.fromRGB(42,42,74) iout.Thickness=1 iout.Parent=ibg
@@ -57,11 +57,25 @@ if not module then
     if ReplicatedStorage:FindFirstChild("EntityInfo") or ReplicatedStorage:FindFirstChild("RemotesFolder") or ReplicatedStorage:FindFirstChild("Bricks") then module="doors" else module="unsupported" end
 end
 
+local function fetch(url)
+    local ok,res=pcall(function() return game:HttpGet(url) end)
+    if not ok or type(res)~="string" or res=="" or res:sub(1,1)=="<" then
+        warn("[Cora] Failed to fetch "..url) return nil end
+    return res
+end
+
+local libSrc=fetch(repo.."Library.lua")
+local tmSrc =fetch(repo.."addons/ThemeManager.lua")
+local smSrc =fetch(repo.."addons/SaveManager.lua")
+if not (libSrc and tmSrc and smSrc) then return end
+
 getgenv().Cora={
-    Library      = loadstring(game:HttpGet(repo.."Library.lua"))(),
-    ThemeManager = loadstring(game:HttpGet(repo.."addons/ThemeManager.lua"))(),
-    SaveManager  = loadstring(game:HttpGet(repo.."addons/SaveManager.lua"))(),
+    Library      = loadstring(libSrc)(),
+    ThemeManager = loadstring(tmSrc)(),
+    SaveManager  = loadstring(smSrc)(),
     gameName     = module,
 }
 
-loadstring(game:HttpGet(BASE..module..".lua"))()
+local modSrc=fetch(BASE..module..".lua")
+if not modSrc then warn("[Cora] Could not load module: "..module) return end
+loadstring(modSrc)()
