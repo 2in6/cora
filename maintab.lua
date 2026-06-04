@@ -1,5 +1,6 @@
 --[[
-    Cora • Main tab
+    Cora • TAB FILE: Main  —  goes in /maintab.lua
+    (This is a TAB file, NOT the bootstrap. The bootstrap lives in main.lua.)
     Movement: Walk Speed (+slider), Fast Stop, Speed Bypass (massless), Fly (+speed).
     Inspired by common public Doors movement scripts.
 --]]
@@ -51,7 +52,7 @@ return function(Cora)
     local function applyMassless(state)
         if not character then return end
         for _, p in ipairs(character:GetDescendants()) do
-            if p:IsA("BasePart") then
+            if p:IsA("BasePart") and p ~= hrp then
                 pcall(function() p.Massless = state end)
             end
         end
@@ -68,7 +69,7 @@ return function(Cora)
         end
         -- Keep new parts massless while enabled
         char.DescendantAdded:Connect(function(d)
-            if d:IsA("BasePart") and Toggles.SpeedBypass and Toggles.SpeedBypass.Value then
+            if d:IsA("BasePart") and d ~= hrp and Toggles.SpeedBypass and Toggles.SpeedBypass.Value then
                 pcall(function() d.Massless = true end)
             end
         end)
@@ -96,11 +97,7 @@ return function(Cora)
         end
     end)
 
-    local MainTab = Window:AddTab({
-        Name        = "Main",
-        Description = "Main Features",
-        Icon        = homeIcon,
-    })
+    local MainTab = Window:AddTab("Main", homeIcon, "Main Features")
     Cora.Tabs.Main = MainTab
 
     local Movement = MainTab:AddLeftGroupbox("Movement", "footprints")
