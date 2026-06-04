@@ -1,191 +1,226 @@
 --[[
-    Cora • Main
-    Loads Obsidian + addons, downloads the moon icon, creates the window,
-    forces a dark theme with a white accent, loads the Settings tab,
-    and adds a best-effort fade in/out on toggle.
+    Cora • Main tab
+    Movement: Walk Speed (+slider), Fast Stop, Speed Bypass (massless), Fly (+speed).
+    Inspired by common public Doors movement scripts.
 --]]
 
 return function(Cora)
-    local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
+    local Library = Cora.Library
+    local Window  = Cora.Window
+    local Toggles = Library.Toggles
+    local Options = Library.Options
 
-    local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
-    local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-    local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+    local Players          = game:GetService("Players")
+    local RunService       = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local LP               = Players.LocalPlayer
 
-    -- Download the moon icon -> usable asset (falls back to lucide "moon")
-    local moonIcon = "moon"
+    ----------------------------------------------------------------
+    -- Character state
+    ----------------------------------------------------------------
+    local character, humanoid, hrp
+    local DEFAULT_SPEED = 16
+
+    -- Fly state (declared early so character hook can use it)
+    local flyEnabled = false
+    local flyBV, flyBG
+
+    local function stopFly()
+        if flyBV then flyBV:Destroy(); flyBV = nil end
+        if flyBG then flyBG:Destroy(); flyBG = nil end
+        if humanoid then pcall(function() humanoid.PlatformStand = false end) end
+    end
+
+    local function startFly()
+        if not hrp then return end
+        stopFly()
+        flyBG = Instance.new("BodyGyro")
+        flyBG.P         = 9e4
+        flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        flyBG.CFrame    = hrp.CFrame
+        flyBG.Parent    = hrp
+
+        flyBV = Instance.new("BodyVelocity")
+        flyBV.Velocity = Vector3.zero
+        flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyBV.Parent   = hrp
+
+        if humanoid then pcall(function() humanoid.PlatformStand = true end) end
+    end
+
+    local function applyMassless(state)
+        if not character then return end
+        for _, p in ipairs(character:GetDescendants()) do
+            if p:IsA("BasePart") and p ~= hrp then
+                pcall(function() p.Massless = state end)
+            end
+        end
+    end
+
+    local function onCharacter(char)
+        character = char
+        humanoid  = char:WaitForChild("Humanoid", 10)
+        hrp       = char:WaitForChild("HumanoidRootPart", 10)
+
+        -- Re-apply massless if Speed Bypass is on
+        if Toggles.SpeedBypass and Toggles.SpeedBypass.Value then
+            applyMassless(true)
+        end
+        -- Keep new parts massless while enabled
+        char.DescendantAdded:Connect(function(d)
+            if d:IsA("BasePart") and d ~= hrp and Toggles.SpeedBypass and Toggles.SpeedBypass.Value then
+                pcall(function() d.Massless = true end)
+            end
+        end)
+
+        -- Restart fly if it was on when we respawned
+        if flyEnabled then startFly() end
+    end
+
+    LP.CharacterAdded:Connect(onCharacter)
+    if LP.Character then task.spawn(onCharacter, LP.Character) end
+
+    ----------------------------------------------------------------
+    -- UI
+    ----------------------------------------------------------------
+    -- Home icon (download -> asset, fallback to lucide "home")
+    local homeIcon = "home"
     pcall(function()
         if writefile and getcustomasset then
-            if not (isfile and isfile("cora_moon.png")) then
-                writefile("cora_moon.png", game:HttpGet(Cora.MoonURL))
+            if not (isfile and isfile("cora_home.png")) then
+                writefile("cora_home.png", game:HttpGet(
+                    "https://i.ibb.co/Qz0ZKBh/home-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                ))
             end
-            moonIcon = getcustomasset("cora_moon.png")
+            homeIcon = getcustomasset("cora_home.png")
         end
     end)
 
-    local Window = Library:CreateWindow({
-        Title         = "Cora",
-        Footer        = Cora.Version,
-        Icon          = moonIcon,
-        Center        = true,
-        AutoShow      = true,
-        Resizable     = true,
-        ToggleKeybind = Enum.KeyCode.P,
-        NotifySide    = "Right",
+    local MainTab = Window:AddTab("Main", homeIcon, "Main Features")
+    Cora.Tabs.Main = MainTab
+
+    local Movement = MainTab:AddLeftGroupbox("Movement", "footprints")
+
+    -- Walk Speed toggle + slider (slider greyed while disabled)
+    Movement:AddToggle("WalkSpeedEnabled", {
+        Text    = "Walk Speed",
+        Default = false,
+        Tooltip = "Override your walk speed.",
     })
 
-    -- Dark background, white accent. Defined as a function so we can
-    -- re-assert it AFTER ThemeManager / config autoload run.
-    local function applyCoraScheme()
+    Movement:AddSlider("WalkSpeedValue", {
+        Text     = "Walk Speed",
+        Default  = 16,
+        Min      = 16,
+        Max      = 25,
+        Rounding = 0,
+        Compact  = false,
+        Disabled = true, -- starts greyed since the toggle is off
+        Tooltip  = "16-25 normally, up to 100 with Speed Bypass.",
+        DisabledTooltip = "Enable Walk Speed first.",
+    })
+
+    Movement:AddToggle("FastStop", {
+        Text    = "Fast Stop",
+        Default = false,
+        Tooltip = "No acceleration - you stop instantly (no slide).",
+    })
+
+    Movement:AddToggle("SpeedBypass", {
+        Text    = "Speed Bypass",
+        Default = false,
+        Tooltip = "Massless bypass. Lets Walk Speed go up to 100.",
+    })
+
+    Movement:AddToggle("Fly", {
+        Text    = "Fly",
+        Default = false,
+        Tooltip = "Fly using the camera direction. Bindable below.",
+    })
+    -- Bindable keybind for Fly, unbound by default
+    Toggles.Fly:AddKeyPicker("FlyKeybind", {
+        Default         = "None",   -- nothing bound by default
+        SyncToggleState = true,
+        Mode            = "Toggle",
+        Text            = "Fly",
+        NoUI            = false,
+    })
+
+    Movement:AddSlider("FlySpeed", {
+        Text     = "Fly Speed",
+        Default  = 16,
+        Min      = 16,
+        Max      = 100,
+        Rounding = 0,
+        Tooltip  = "Speed used while flying.",
+    })
+
+    ----------------------------------------------------------------
+    -- Logic (decoupled from UI creation)
+    ----------------------------------------------------------------
+    -- Grey/un-grey the Walk Speed slider with its toggle
+    Toggles.WalkSpeedEnabled:OnChanged(function()
+        local on = Toggles.WalkSpeedEnabled.Value
+        pcall(function() Options.WalkSpeedValue:SetDisabled(not on) end)
+        if not on and humanoid then
+            humanoid.WalkSpeed = DEFAULT_SPEED -- restore game default
+        end
+    end)
+
+    -- Speed Bypass: massless on/off + extend the Walk Speed slider max
+    Toggles.SpeedBypass:OnChanged(function()
+        local on = Toggles.SpeedBypass.Value
+        applyMassless(on)
         pcall(function()
-            local S = Library.Scheme
-            S.BackgroundColor = Color3.fromRGB(12, 12, 12)
-            S.MainColor       = Color3.fromRGB(18, 18, 18)
-            S.AccentColor     = Color3.fromRGB(255, 255, 255)
-            S.OutlineColor    = Color3.fromRGB(40, 40, 40)
-            S.FontColor       = Color3.fromRGB(255, 255, 255)
-            if Library.UpdateColorsUsingRegistry then
-                Library:UpdateColorsUsingRegistry()
+            if Options.WalkSpeedValue.SetMax then
+                Options.WalkSpeedValue:SetMax(on and 100 or 25)
+            else
+                Options.WalkSpeedValue.Max = on and 100 or 25
             end
         end)
-    end
-    applyCoraScheme()
+        if not on and Options.WalkSpeedValue.Value > 25 then
+            pcall(function() Options.WalkSpeedValue:SetValue(25) end)
+        end
+    end)
 
-    -- Share objects with other modules
-    Cora.Library      = Library
-    Cora.ThemeManager = ThemeManager
-    Cora.SaveManager  = SaveManager
-    Cora.Window       = Window
-    Cora.Tabs         = {}
+    -- Fly on/off
+    Toggles.Fly:OnChanged(function()
+        flyEnabled = Toggles.Fly.Value
+        if flyEnabled then startFly() else stopFly() end
+    end)
 
-    ThemeManager:SetLibrary(Library)
-    SaveManager:SetLibrary(Library)
-    SaveManager:IgnoreThemeSettings()
-    SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-    ThemeManager:SetFolder("Cora")
-    SaveManager:SetFolder("Cora")
+    -- Apply walk speed continuously while enabled
+    RunService.Heartbeat:Connect(function()
+        if humanoid and Toggles.WalkSpeedEnabled.Value then
+            humanoid.WalkSpeed = Options.WalkSpeedValue.Value
+        end
+    end)
 
-    -- Tabs (order = creation order)
-    Cora.fetch("maintab.lua")()(Cora)
-    Cora.fetch("settings.lua")()(Cora)
-
-    -- Autoload config, then re-assert the white accent so it wins
-    pcall(function() SaveManager:LoadAutoloadConfig() end)
-    applyCoraScheme()
-
-    ----------------------------------------------------------------
-    -- Best-effort fade in/out on toggle (graceful no-op on failure)
-    ----------------------------------------------------------------
-    task.spawn(function()
-        local UIS = game:GetService("UserInputService")
-        local TS  = game:GetService("TweenService")
-        local Options = Library.Options
-
-        task.wait(0.3) -- let layout/AbsoluteSize settle
-
-        -- Find the window root by locating the "Cora" title label,
-        -- then walking up to the top-level frame under its ScreenGui.
-        local function getWindowRoot()
-            local roots = {}
-            pcall(function() if gethui then table.insert(roots, gethui()) end end)
-            pcall(function() table.insert(roots, game:GetService("CoreGui")) end)
-            pcall(function()
-                table.insert(roots, game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"))
-            end)
-
-            local best, bestArea
-            for _, parent in ipairs(roots) do
-                for _, sg in ipairs(parent:GetChildren()) do
-                    if sg:IsA("ScreenGui") then
-                        for _, d in ipairs(sg:GetDescendants()) do
-                            if d:IsA("TextLabel") and d.Text == "Cora" then
-                                local node = d
-                                while node.Parent and node.Parent ~= sg do
-                                    node = node.Parent
-                                end
-                                local area = node.AbsoluteSize.X * node.AbsoluteSize.Y
-                                if not bestArea or area > bestArea then
-                                    best, bestArea = node, area
-                                end
-                            end
-                        end
-                    end
-                end
+    -- Fast stop + fly steering
+    RunService.RenderStepped:Connect(function()
+        -- Fast stop (skip while flying)
+        if not flyEnabled and Toggles.FastStop.Value and humanoid and hrp then
+            if humanoid.MoveDirection.Magnitude == 0 then
+                local v = hrp.AssemblyLinearVelocity
+                hrp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
             end
-            return best
         end
 
-        local ok, err = pcall(function()
-            local root = getWindowRoot()
-            if not root then return end -- can't find it; skip silently
+        -- Fly
+        if flyEnabled and flyBV and flyBG then
+            local cam = workspace.CurrentCamera
+            flyBG.CFrame = cam.CFrame
 
-            -- Use existing CanvasGroup if the library already wraps it,
-            -- otherwise wrap the window in a full-screen CanvasGroup.
-            local cg
-            if root:IsA("CanvasGroup") then
-                cg = root
-            else
-                cg = Instance.new("CanvasGroup")
-                cg.Name                  = "CoraFade"
-                cg.BackgroundTransparency = 1
-                cg.AnchorPoint           = Vector2.new(0, 0)
-                cg.Position              = UDim2.fromScale(0, 0)
-                cg.Size                  = UDim2.fromScale(1, 1)
-                cg.ClipsDescendants      = false
-                cg.ZIndex                = root.ZIndex
-                cg.Parent                = root.Parent
-                root.Parent              = cg
-                -- root keeps its own Position/Size/AnchorPoint so drag/resize still work
-            end
+            local dir = Vector3.zero
+            if UserInputService:IsKeyDown(Enum.KeyCode.W)          then dir += cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S)          then dir -= cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A)          then dir -= cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D)          then dir += cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space)      then dir += Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0, 1, 0) end
 
-            local open = (root.Visible ~= false)
-            cg.Visible          = true
-            cg.GroupTransparency = open and 0 or 1
-            cg.Interactable     = open
-
-            local function animate(state)
-                open = state
-                pcall(function() root.Visible = true end) -- keep rendered; cg controls visibility
-                cg.Interactable = state
-                if state then cg.Visible = true end
-                local ti = TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                local tw = TS:Create(cg, ti, { GroupTransparency = state and 0 or 1 })
-                tw:Play()
-                if not state then
-                    tw.Completed:Once(function()
-                        if not open then cg.Visible = false end
-                    end)
-                end
-            end
-
-            -- Stop the library from instant-toggling so our fade is visible
-            pcall(function() Library.ToggleKeybind = nil end)
-
-            -- Drive the toggle ourselves, reading the editable keypicker value
-            UIS.InputBegan:Connect(function(input, gp)
-                if gp then return end
-                if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-                if UIS:GetFocusedTextBox() then return end
-
-                local picking = false
-                pcall(function() picking = Options.MenuKeybind and Options.MenuKeybind.Picking end)
-                if picking then return end
-
-                local keyName = "P"
-                pcall(function()
-                    if Options.MenuKeybind and Options.MenuKeybind.Value then
-                        keyName = Options.MenuKeybind.Value
-                    end
-                end)
-
-                if input.KeyCode.Name == keyName then
-                    animate(not open)
-                end
-            end)
-        end)
-
-        if not ok then
-            warn("[Cora] Fade animation skipped (UI works normally): " .. tostring(err))
+            if dir.Magnitude > 0 then dir = dir.Unit end
+            flyBV.Velocity = dir * Options.FlySpeed.Value
         end
     end)
 end
