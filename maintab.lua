@@ -164,7 +164,7 @@ return function(Cora)
     })
 
     -- Prompt Exploits group (right side, next to Movement)
-    local Prompts = MainTab:AddRightGroupbox("Prompt Exploits")
+    local Prompts = MainTab:AddRightGroupbox("Prompt Exploits", "zap")
 
     Prompts:AddToggle("PromptClip", {
         Text    = "Prompt Clip",
@@ -181,12 +181,12 @@ return function(Cora)
     Prompts:AddSlider("PromptRangeMult", {
         Text     = "Prompt Range Multiplier",
         Default  = 2,
-        Min      = 2,
-        Max      = 10,
+        Min      = 1.1,
+        Max      = 2,
         Rounding = 1,
         Suffix   = "x",
         Disabled = true, -- greyed until Prompt Range is enabled
-        Tooltip  = "Multiplies prompt activation distance. Higher = more likely to be flagged.",
+        Tooltip  = "Multiplies prompt activation distance. ~2x is the Doors limit.",
         DisabledTooltip = "Enable Prompt Range first.",
     })
 
@@ -211,7 +211,7 @@ return function(Cora)
 
     Prompts:AddDropdown("AutoPromptIgnore", {
         Values  = { "Jeff Items", "Gold", "Drops", "Glitch Fragment",
-                    "Paintings", "Light Source Items", "Skull Prompts" },
+                    "Paintings", "Light Source Items", "Skull Prompts", "Hiding Places" },
         Default = {},
         Multi   = true,
         Text    = "Auto Prompt Ignore",
@@ -226,6 +226,27 @@ return function(Cora)
         Rounding = 2,
         Suffix   = "s",
         Tooltip  = "Delay between auto triggers. 0 = every frame.",
+    })
+
+    -- Useful group (left, under Movement)
+    local Useful = MainTab:AddLeftGroupbox("Useful", "wrench")
+
+    Useful:AddToggle("AutoHeartbeat", {
+        Text    = "Auto Heartbeat Mini-Game",
+        Default = false,
+        Tooltip = "Automatically passes the Figure heartbeat mini-game.",
+    })
+
+    Useful:AddToggle("AutoSolveLibrary", {
+        Text    = "Auto Solve Library",
+        Default = false,
+        Tooltip = "Door 50: once every book is collected, opens the locked door when you're near it.",
+    })
+
+    Useful:AddToggle("AutoBreaker", {
+        Text    = "Auto Breaker Box",
+        Default = false,
+        Tooltip = "Automatically completes the breaker box (legit method).",
     })
 
     ----------------------------------------------------------------
@@ -415,6 +436,12 @@ return function(Cora)
         Bulklight = true, Straplight = true, Shakelight = true,
         Glowsticks = true, LaserPointer = true,
     }
+    local HidingPlaces = {
+        Wardrobe = true, Rooms_Locker = true, Rooms_Locker_Fridge = true,
+        Locker_Large = true, Backdoor_Wardrobe = true, Bed = true,
+        Double_Bed = true, Toolshed = true, RetroWardrobe = true,
+        CircularVent = true,
+    }
     local function isIgnored(p)
         local ig = Options.AutoPromptIgnore.Value
         if type(ig) ~= "table" then return false end
@@ -430,6 +457,7 @@ return function(Cora)
         if ig["Paintings"] and pname:find("Painting") then return true end
         if ig["Light Source Items"] and LightSources[pname] then return true end
         if ig["Skull Prompts"] and (pname == "SkullLock" or pname:find("Skull")) then return true end
+        if ig["Hiding Places"] and (p.Name == "HidePrompt" or HidingPlaces[pname]) then return true end
         return false
     end
 
@@ -528,4 +556,159 @@ return function(Cora)
             end
         end
     end)
+
+    ----------------------------------------------------------------
+    -- Useful logic (Doors-specific; everything guarded for other games/lobby)
+    ----------------------------------------------------------------
+    -- Read the full library code from the hint paper ("_" for missing slots)
+    local function getLibraryCode()
+        local gd    = ReplicatedStorage:FindFirstChild("GameData")
+        local floor = gd and gd:FindFirstChild("Floor")
+        local codeLen = (floor and floor.Value == "Fools") and 10 or 5
+        local slot = table.create(codeLen, "_")
+
+        local paper
+        for _, plr in ipairs(Players:GetPlayers()) do
+            local ch = plr.Character
+            local bp = plr:FindFirstChild("Backpack")
+            paper = (ch and (ch:FindFirstChild("LibraryHintPaper") or ch:FindFirstChild("LibraryHintPaperHard")))
+                 or (bp and (bp:FindFirstChild("LibraryHintPaper") or bp:FindFirstChild("LibraryHintPaperHard")))
+            if paper then break end
+        end
+        if not (paper and paper:FindFirstChild("UI")) then return table.concat(slot) end
+
+        local pg     = LP:FindFirstChild("PlayerGui")
+        local permUI = pg and pg:FindFirstChild("PermUI")
+        local hintsF = permUI and permUI:FindFirstChild("Hints")
+        if not hintsF then return table.concat(slot) end
+        local hints = hintsF:GetChildren()
+
+        for _, i in ipairs(paper.UI:GetChildren()) do
+            if i:IsA("ImageLabel") and i.Name ~= "Image" then
+                local pos = tonumber(i.Name)
+                if pos and slot[pos] then
+                    for _, v in ipairs(hints) do
+                        if v.Name == "Icon" and v.ImageRectOffset.X == i.ImageRectOffset.X then
+                            local label = v:FindFirstChild("TextLabel")
+                            if label then slot[pos] = label.Text end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        return table.concat(slot)
+    end
+
+    -- Auto Solve Library: submit the full code when near the Door 50 lock
+    local libTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        if not Toggles.AutoSolveLibrary.Value then return end
+        libTimer += dt
+        if libTimer < 0.4 then return end
+        libTimer = 0
+        pcall(function()
+            local gd     = ReplicatedStorage:FindFirstChild("GameData")
+            local latest = gd and gd:FindFirstChild("LatestRoom")
+            if not latest or latest.Value ~= 50 then return end
+
+            local code = getLibraryCode()
+            if not code or code:find("_") then return end -- not all books collected yet
+
+            local char = LP.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+
+            local near = true
+            local rooms = workspace:FindFirstChild("CurrentRooms")
+            local room50 = rooms and rooms:FindFirstChild("50")
+            local door = room50 and room50:FindFirstChild("Door")
+            local doorPart = door and door:FindFirstChild("Door")
+            if doorPart then
+                near = (root.Position - doorPart.Position).Magnitude < 35
+            end
+
+            if near then
+                local rf = getRemotes()
+                local PL = rf and rf:FindFirstChild("PL")
+                if PL then PL:FireServer(code) end
+            end
+        end)
+    end)
+
+    -- Auto Breaker Box (legit method, ported from public Doors scripts)
+    local function breaker(part)
+        pcall(function()
+            local gui = part:WaitForChild("SurfaceGui", 5)
+            if not gui then return end
+            local codeLabel = gui:WaitForChild("Frame"):WaitForChild("Code")
+
+            local function run()
+                task.wait(0.05)
+                if not Toggles.AutoBreaker.Value then return end
+                local target = tonumber(codeLabel.Text)
+                if not target then return end
+                for _, v in ipairs(part:GetChildren()) do
+                    if v.Name == "BreakerSwitch" and v:GetAttribute("ID") == target then
+                        local cf    = codeLabel:FindFirstChild("Frame")
+                        local trans = cf and cf.BackgroundTransparency
+                        local pc    = v:FindFirstChild("PrismaticConstraint")
+                        local light = v:FindFirstChild("Light")
+                        local snd   = v:FindFirstChild("Sound")
+                        if trans == 0 then
+                            if v:GetAttribute("Enabled") then return end
+                            v:SetAttribute("Enabled", true)
+                            if pc then pc.TargetPosition = -0.2 end
+                            if light then
+                                light.Material = Enum.Material.Neon
+                                local spark = light:FindFirstChild("Spark", true)
+                                if spark then spark:Emit(1) end
+                            end
+                            if snd then snd:Play() end
+                        elseif trans == 1 then
+                            if not v:GetAttribute("Enabled") then return end
+                            v:SetAttribute("Enabled", false)
+                            if pc then pc.TargetPosition = 0.2 end
+                            if light then light.Material = Enum.Material.Glass end
+                            if snd then snd:Play() end
+                        end
+                        break
+                    end
+                end
+            end
+
+            codeLabel:GetPropertyChangedSignal("Text"):Connect(run)
+            run()
+        end)
+    end
+
+    Toggles.AutoBreaker:OnChanged(function()
+        if not Toggles.AutoBreaker.Value then return end
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if rooms then
+            for _, v in ipairs(rooms:GetDescendants()) do
+                if v.Name == "ElevatorBreaker" then breaker(v) end
+            end
+        end
+    end)
+
+    workspace.DescendantAdded:Connect(function(v)
+        if v.Name == "ElevatorBreaker" and Toggles.AutoBreaker.Value then
+            breaker(v)
+        end
+    end)
+
+    -- Auto Heartbeat: force a perfect beat by intercepting the game's own remote call
+    if hookmetamethod and getnamecallmethod then
+        local old
+        old = hookmetamethod(game, "__namecall", function(self, ...)
+            if not (Library and Library.Unloaded)
+               and Toggles.AutoHeartbeat and Toggles.AutoHeartbeat.Value then
+                if getnamecallmethod() == "FireServer" and self.Name == "ClutchHeartbeat" then
+                    return old(self, true)
+                end
+            end
+            return old(self, ...)
+        end)
+    end
 end
