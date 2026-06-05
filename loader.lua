@@ -63,7 +63,7 @@ local function fetch(path)
 end
 
 local Cora = {
-    Version = "v1.0.4",
+    Version = "v1.0.7",
     Base    = ("https://raw.githubusercontent.com/%s/%s/%s/"):format(USER, REPO, BRANCH),
     fetch   = fetch,
     MoonURL = "https://i.ibb.co/DDF8bL5Q/bedtime-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png",
