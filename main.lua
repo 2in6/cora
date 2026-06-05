@@ -14,13 +14,19 @@ return function(Cora)
     local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
     -- Download the moon icon -> usable asset (falls back to lucide "moon")
+    pcall(function()
+        if makefolder and not (isfolder and isfolder("CoraData")) then
+            makefolder("CoraData")
+        end
+    end)
     local moonIcon = "moon"
     pcall(function()
         if writefile and getcustomasset then
-            if not (isfile and isfile("cora_moon.png")) then
-                writefile("cora_moon.png", game:HttpGet(Cora.MoonURL))
+            local path = "CoraData/cora_moon.png"
+            if not (isfile and isfile(path)) then
+                writefile(path, game:HttpGet(Cora.MoonURL))
             end
-            moonIcon = getcustomasset("cora_moon.png")
+            moonIcon = getcustomasset(path)
         end
     end)
 
