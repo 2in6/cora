@@ -13,7 +13,7 @@ return function(Cora)
     local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
     local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
-    -- Download the moon icon -> usable asset (falls back to lucide "moon")
+    -- Download the window logo -> usable asset (falls back to lucide "moon")
     pcall(function()
         if makefolder and not (isfolder and isfolder("CoraData")) then
             makefolder("CoraData")
@@ -22,9 +22,11 @@ return function(Cora)
     local moonIcon = "moon"
     pcall(function()
         if writefile and getcustomasset then
-            local path = "CoraData/cora_moon.png"
+            local path = "CoraData/cora_logo.png"
             if not (isfile and isfile(path)) then
-                writefile(path, game:HttpGet(Cora.MoonURL))
+                writefile(path, game:HttpGet(
+                    "https://i.ibb.co/4RjdkFND/bedtime-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                ))
             end
             moonIcon = getcustomasset(path)
         end
@@ -74,6 +76,7 @@ return function(Cora)
 
     -- Tabs (order = creation order)
     Cora.fetch("maintab.lua")()(Cora)
+    Cora.fetch("visualstab.lua")()(Cora)
     Cora.fetch("settings.lua")()(Cora)
 
     -- Autoload config, then re-assert the white accent so it wins
