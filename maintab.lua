@@ -561,12 +561,13 @@ return function(Cora)
             local p = interactions[i]
             if not p or not p.Parent then
                 table.remove(interactions, i)
-            elseif p.Enabled and not fired[p] and not isIgnored(p) then
+            elseif not fired[p] and not isIgnored(p) then
                 local part = getPromptPart(p)
                 if part then
                     local reach = math.max(p.MaxActivationDistance, AUTO_REACH)
                     local dist = (root.Position - part.Position).Magnitude
                     if dist <= reach then
+                        if not p.Enabled then pcall(function() p.Enabled = true end) end
                         tryEquipFor(p)
                         firePrompt(p)
                         fired[p] = true -- fire each prompt once (no cabinet open/close spam)
