@@ -81,50 +81,29 @@ return function(Cora)
     if LP.Character then task.spawn(onCharacter, LP.Character) end
 
     ----------------------------------------------------------------
-    -- Home icon: try both ImgBB hosts, validate PNG bytes, else lucide "house"
+    -- Home icon: byte-for-byte the same simple method as the working
+    -- Settings gear (no validation, no SetDescription). Falls back to
+    -- lucide "house" if the executor lacks custom assets.
     ----------------------------------------------------------------
+    pcall(function()
+        if makefolder and not (isfolder and isfolder("CoraData")) then
+            makefolder("CoraData")
+        end
+    end)
     local homeIcon = "house"
     pcall(function()
-        if not (writefile and getcustomasset) then return end
-
-        local function isPNG(data)
-            return type(data) == "string" and #data > 100
-                and data:sub(1, 8) == "\137PNG\r\n\26\n"
-        end
-
-        -- Reuse a valid cached file; clear a corrupt one
-        local cached = false
-        if isfile and isfile("cora_home.png") then
-            local ok, data = pcall(readfile, "cora_home.png")
-            if ok and isPNG(data) then
-                cached = true
-            elseif delfile then
-                pcall(delfile, "cora_home.png")
+        if writefile and getcustomasset then
+            local path = "CoraData/cora_home.png"
+            if not (isfile and isfile(path)) then
+                writefile(path, game:HttpGet(
+                    "https://i.ibb.co/Qz0ZKBh/home-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                ))
             end
-        end
-
-        if not cached then
-            local urls = {
-                "https://i.ibb.co/Qz0ZKBh/home-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png",
-                "https://i.ibb.co/MWdbCTK/home-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png",
-            }
-            for _, url in ipairs(urls) do
-                local ok, data = pcall(game.HttpGet, game, url)
-                if ok and isPNG(data) then
-                    writefile("cora_home.png", data)
-                    cached = true
-                    break
-                end
-            end
-        end
-
-        if cached then
-            homeIcon = getcustomasset("cora_home.png")
+            homeIcon = getcustomasset(path)
         end
     end)
 
     local MainTab = Window:AddTab("Main", homeIcon)
-    pcall(function() MainTab:SetDescription("Main Features") end)
     Cora.Tabs.Main = MainTab
 
     ----------------------------------------------------------------
