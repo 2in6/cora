@@ -20,10 +20,10 @@ return function(Cora)
     local gearIcon = "settings"
     pcall(function()
         if writefile and getcustomasset then
-            local path = "CoraData/cora_gear.png"
+            local path = "CoraData/cora_settings.png"
             if not (isfile and isfile(path)) then
                 writefile(path, game:HttpGet(
-                    "https://i.ibb.co/LDcRHNM0/settings-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                    "https://i.ibb.co/bjLVWWwT/settings-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
                 ))
             end
             gearIcon = getcustomasset(path)
