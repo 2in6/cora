@@ -163,6 +163,71 @@ return function(Cora)
         Tooltip  = "Speed used while flying.",
     })
 
+    -- Prompt Exploits group (right side, next to Movement)
+    local Prompts = MainTab:AddRightGroupbox("Prompt Exploits")
+
+    Prompts:AddToggle("PromptClip", {
+        Text    = "Prompt Clip",
+        Default = false,
+        Tooltip = "Interact with some prompts through walls.",
+    })
+
+    Prompts:AddToggle("PromptRange", {
+        Text    = "Prompt Range",
+        Default = false,
+        Tooltip = "Trigger prompts from further away.",
+    })
+
+    Prompts:AddSlider("PromptRangeMult", {
+        Text     = "Prompt Range Multiplier",
+        Default  = 2,
+        Min      = 2,
+        Max      = 10,
+        Rounding = 1,
+        Suffix   = "x",
+        Disabled = true, -- greyed until Prompt Range is enabled
+        Tooltip  = "Multiplies prompt activation distance. Higher = more likely to be flagged.",
+        DisabledTooltip = "Enable Prompt Range first.",
+    })
+
+    Prompts:AddToggle("InstantPrompt", {
+        Text    = "Instant Prompt",
+        Default = false,
+        Tooltip = "Removes hold time (key doors, levers, etc. trigger instantly).",
+    })
+
+    Prompts:AddToggle("AutoPrompt", {
+        Text    = "Auto Prompt",
+        Default = false,
+        Tooltip = "Automatically triggers nearby prompts (chests, doors, pickups).",
+    })
+    Toggles.AutoPrompt:AddKeyPicker("AutoPromptKeybind", {
+        Default         = "None", -- nothing bound by default
+        SyncToggleState = true,
+        Mode            = "Toggle",
+        Text            = "Auto Prompt",
+        NoUI            = false,
+    })
+
+    Prompts:AddDropdown("AutoPromptIgnore", {
+        Values  = { "Jeff Items", "Gold", "Drops", "Glitch Fragment",
+                    "Paintings", "Light Source Items", "Skull Prompts" },
+        Default = {},
+        Multi   = true,
+        Text    = "Auto Prompt Ignore",
+        Tooltip = "Selected categories are never auto-triggered.",
+    })
+
+    Prompts:AddSlider("AutoPromptInterval", {
+        Text     = "Auto Prompt Interval",
+        Default  = 0.05,
+        Min      = 0,
+        Max      = 0.15,
+        Rounding = 2,
+        Suffix   = "s",
+        Tooltip  = "Delay between auto triggers. 0 = every frame.",
+    })
+
     ----------------------------------------------------------------
     -- Logic
     ----------------------------------------------------------------
@@ -263,6 +328,204 @@ return function(Cora)
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0, 1, 0) end
             if dir.Magnitude > 0 then dir = dir.Unit end
             flyBV.Velocity = dir * Options.FlySpeed.Value
+        end
+    end)
+
+    ----------------------------------------------------------------
+    -- Prompt Exploits logic
+    ----------------------------------------------------------------
+    local fireprompt = fireproximityprompt -- executor fn (may be nil)
+
+    local function getPromptPart(p)
+        local par = p.Parent
+        if not par then return nil end
+        if par:IsA("BasePart") then return par end
+        if par:IsA("Model") then return par.PrimaryPart or par:FindFirstChildWhichIsA("BasePart") end
+        return nil
+    end
+
+    -- Store originals in attributes so the three toggles don't clash on restore
+    local function applyClip(p, on)
+        if on then
+            if p:GetAttribute("CoraClip") == nil then
+                p:SetAttribute("CoraClip", p.RequiresLineOfSight)
+            end
+            p.RequiresLineOfSight = false
+        else
+            local o = p:GetAttribute("CoraClip")
+            if o ~= nil then p.RequiresLineOfSight = o; p:SetAttribute("CoraClip", nil) end
+        end
+    end
+
+    local function applyRange(p, on, mult)
+        if on then
+            if p:GetAttribute("CoraRange") == nil then
+                p:SetAttribute("CoraRange", p.MaxActivationDistance)
+            end
+            p.MaxActivationDistance = (p:GetAttribute("CoraRange") or p.MaxActivationDistance) * mult
+        else
+            local o = p:GetAttribute("CoraRange")
+            if o ~= nil then p.MaxActivationDistance = o; p:SetAttribute("CoraRange", nil) end
+        end
+    end
+
+    local function applyInstant(p, on)
+        if on then
+            if p:GetAttribute("CoraDur") == nil then
+                p:SetAttribute("CoraDur", p.HoldDuration)
+            end
+            p.HoldDuration = 0
+        else
+            local o = p:GetAttribute("CoraDur")
+            if o ~= nil then p.HoldDuration = o; p:SetAttribute("CoraDur", nil) end
+        end
+    end
+
+    local function eachPrompt(fn)
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then pcall(fn, v) end
+        end
+    end
+
+    Toggles.PromptClip:OnChanged(function()
+        local on = Toggles.PromptClip.Value
+        eachPrompt(function(p) applyClip(p, on) end)
+    end)
+
+    Toggles.PromptRange:OnChanged(function()
+        local on = Toggles.PromptRange.Value
+        pcall(function() Options.PromptRangeMult:SetDisabled(not on) end)
+        eachPrompt(function(p) applyRange(p, on, Options.PromptRangeMult.Value) end)
+    end)
+
+    Options.PromptRangeMult:OnChanged(function()
+        if Toggles.PromptRange.Value then
+            eachPrompt(function(p) applyRange(p, true, Options.PromptRangeMult.Value) end)
+        end
+    end)
+
+    Toggles.InstantPrompt:OnChanged(function()
+        local on = Toggles.InstantPrompt.Value
+        eachPrompt(function(p) applyInstant(p, on) end)
+    end)
+
+    -- Auto Prompt ignore categories
+    local LightSources = {
+        Flashlight = true, Candle = true, Lighter = true, Lantern = true,
+        Bulklight = true, Straplight = true, Shakelight = true,
+        Glowsticks = true, LaserPointer = true,
+    }
+    local function isIgnored(p)
+        local ig = Options.AutoPromptIgnore.Value
+        if type(ig) ~= "table" then return false end
+        local par = p.Parent
+        local pname = par and par.Name or ""
+        if ig["Gold"] and pname == "GoldPile" then return true end
+        if ig["Jeff Items"] and par and par:GetAttribute("JeffShop") then return true end
+        if ig["Drops"] then
+            local drops = workspace:FindFirstChild("Drops")
+            if drops and p:IsDescendantOf(drops) then return true end
+        end
+        if ig["Glitch Fragment"] and (pname:find("Glitch") or pname:find("Fragment")) then return true end
+        if ig["Paintings"] and pname:find("Painting") then return true end
+        if ig["Light Source Items"] and LightSources[pname] then return true end
+        if ig["Skull Prompts"] and (pname == "SkullLock" or pname:find("Skull")) then return true end
+        return false
+    end
+
+    -- Best-effort auto-equip a key/skeleton key for lock/door prompts (Doors-specific)
+    local LockNames = {
+        Lock = true, Lock1 = true, Lock2 = true, SkullLock = true,
+        ChestBoxLocked = true, Toolbox_Locked = true,
+    }
+    local function tryEquipFor(p)
+        local char = LP.Character
+        if not char then return end
+        local par = p.Parent
+        local pname = par and par.Name or ""
+        if not (LockNames[pname] or pname:find("Lock") or pname:find("Key") or pname:find("Door")) then
+            return
+        end
+        -- already holding something usable?
+        if char:FindFirstChild("Key") or char:FindFirstChild("SkeletonKey")
+            or char:FindFirstChild("Lockpick") then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local bp  = LP:FindFirstChild("Backpack")
+        local tool = bp and (bp:FindFirstChild("Key") or bp:FindFirstChild("SkeletonKey")
+            or bp:FindFirstChild("Lockpick"))
+        if tool and hum then pcall(function() hum:EquipTool(tool) end) end
+    end
+
+    local function firePrompt(p)
+        if fireprompt then
+            pcall(fireprompt, p)
+        else
+            pcall(function()
+                p:InputHoldBegin()
+                task.wait(p.HoldDuration or 0)
+                p:InputHoldEnd()
+            end)
+        end
+    end
+
+    -- Collected prompts for Auto Prompt (kept in sync with the world)
+    local interactions = {}
+    local function rebuildInteractions()
+        table.clear(interactions)
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then table.insert(interactions, v) end
+        end
+    end
+
+    Toggles.AutoPrompt:OnChanged(function()
+        if Toggles.AutoPrompt.Value then rebuildInteractions() else table.clear(interactions) end
+    end)
+
+    -- Apply settings to newly-spawned prompts and track them for Auto Prompt
+    workspace.DescendantAdded:Connect(function(v)
+        if not v:IsA("ProximityPrompt") then return end
+        task.defer(function()
+            if not v.Parent then return end
+            if Toggles.PromptClip.Value    then pcall(applyClip, v, true) end
+            if Toggles.PromptRange.Value   then pcall(applyRange, v, true, Options.PromptRangeMult.Value) end
+            if Toggles.InstantPrompt.Value then pcall(applyInstant, v, true) end
+            if Toggles.AutoPrompt.Value    then table.insert(interactions, v) end
+        end)
+    end)
+
+    workspace.DescendantRemoving:Connect(function(v)
+        if not v:IsA("ProximityPrompt") then return end
+        for i = #interactions, 1, -1 do
+            if interactions[i] == v then table.remove(interactions, i); break end
+        end
+    end)
+
+    -- Auto Prompt loop
+    local autoTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        if not Toggles.AutoPrompt.Value then return end
+        autoTimer += dt
+        if autoTimer < Options.AutoPromptInterval.Value then return end
+        autoTimer = 0
+
+        local char = LP.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+
+        for i = #interactions, 1, -1 do
+            local p = interactions[i]
+            if not p or not p.Parent then
+                table.remove(interactions, i)
+            elseif p.Enabled and not isIgnored(p) then
+                local part = getPromptPart(p)
+                if part then
+                    local dist = (root.Position - part.Position).Magnitude
+                    if dist <= p.MaxActivationDistance then
+                        tryEquipFor(p)
+                        firePrompt(p)
+                    end
+                end
+            end
         end
     end)
 end
