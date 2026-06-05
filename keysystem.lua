@@ -14,11 +14,19 @@ return function(Cora)
     local LocalPlayer = Players.LocalPlayer
     local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
 
+    -- All Cora files live in the CoraData folder
+    pcall(function()
+        if makefolder and not (isfolder and isfolder("CoraData")) then
+            makefolder("CoraData")
+        end
+    end)
+    local KEY_PATH = "CoraData/cora_key.txt"
+
     -- Load any saved key
     local savedKey
     pcall(function()
-        if isfile and isfile("cora_key.txt") then
-            savedKey = readfile("cora_key.txt"):match("^%s*(.-)%s*$")
+        if isfile and isfile(KEY_PATH) then
+            savedKey = readfile(KEY_PATH):match("^%s*(.-)%s*$")
             if savedKey == "" then savedKey = nil end
         end
     end)
@@ -31,7 +39,7 @@ return function(Cora)
                 return true, "Keyless mode"
             elseif result.message == "KEY_VALID" then
                 getgenv().SCRIPT_KEY = key
-                pcall(function() if writefile then writefile("cora_key.txt", key) end end)
+                pcall(function() if writefile then writefile(KEY_PATH, key) end end)
                 return true, "Key valid"
             end
             return false, "Invalid key"
