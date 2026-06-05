@@ -93,10 +93,10 @@ return function(Cora)
     local homeIcon = "house"
     pcall(function()
         if writefile and getcustomasset then
-            local path = "CoraData/cora_home.png"
+            local path = "CoraData/cora_main.png"
             if not (isfile and isfile(path)) then
                 writefile(path, game:HttpGet(
-                    "https://i.ibb.co/Qz0ZKBh/home-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                    "https://i.ibb.co/hRzVz0b9/home-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
                 ))
             end
             homeIcon = getcustomasset(path)
@@ -211,7 +211,7 @@ return function(Cora)
 
     Prompts:AddDropdown("AutoPromptIgnore", {
         Values  = { "Jeff Items", "Gold", "Drops", "Glitch Fragment",
-                    "Paintings", "Light Source Items", "Skull Prompts", "Hiding Places" },
+                    "Paintings", "Light Source Items", "Skull Prompts", "Hiding Places", "Rifts" },
         Default = {},
         Multi   = true,
         Text    = "Auto Prompt Ignore",
@@ -361,7 +361,16 @@ return function(Cora)
         local par = p.Parent
         if not par then return nil end
         if par:IsA("BasePart") then return par end
-        if par:IsA("Model") then return par.PrimaryPart or par:FindFirstChildWhichIsA("BasePart") end
+        if par:IsA("Model") and par.PrimaryPart then return par.PrimaryPart end
+        local bp = par:FindFirstChildWhichIsA("BasePart")
+        if bp then return bp end
+        -- walk up to the nearest BasePart ancestor (covers cabinets/drawers)
+        local a = par.Parent
+        while a and a ~= workspace and a ~= game do
+            if a:IsA("BasePart") then return a end
+            if a:IsA("Model") and a.PrimaryPart then return a.PrimaryPart end
+            a = a.Parent
+        end
         return nil
     end
 
@@ -443,6 +452,8 @@ return function(Cora)
         CircularVent = true,
     }
     local function isIgnored(p)
+        -- Always skip the revive prompt: it spams and fires while dead.
+        if p.Name == "RevivePrompt" then return true end
         local ig = Options.AutoPromptIgnore.Value
         if type(ig) ~= "table" then return false end
         local par = p.Parent
@@ -458,6 +469,7 @@ return function(Cora)
         if ig["Light Source Items"] and LightSources[pname] then return true end
         if ig["Skull Prompts"] and (pname == "SkullLock" or pname:find("Skull")) then return true end
         if ig["Hiding Places"] and (p.Name == "HidePrompt" or HidingPlaces[pname]) then return true end
+        if ig["Rifts"] and (p.Name == "RiftPrompt" or p.Name == "StarRiftPrompt" or pname:find("Rift")) then return true end
         return false
     end
 
@@ -498,6 +510,7 @@ return function(Cora)
 
     -- Collected prompts for Auto Prompt (kept in sync with the world)
     local interactions = {}
+    local fired = {} -- prompts already triggered this session (prevents cabinet open/close spam)
     local function rebuildInteractions()
         table.clear(interactions)
         for _, v in ipairs(workspace:GetDescendants()) do
@@ -507,6 +520,7 @@ return function(Cora)
 
     Toggles.AutoPrompt:OnChanged(function()
         if Toggles.AutoPrompt.Value then rebuildInteractions() else table.clear(interactions) end
+        table.clear(fired)
     end)
 
     -- Apply settings to newly-spawned prompts and track them for Auto Prompt
@@ -523,15 +537,18 @@ return function(Cora)
 
     workspace.DescendantRemoving:Connect(function(v)
         if not v:IsA("ProximityPrompt") then return end
+        fired[v] = nil
         for i = #interactions, 1, -1 do
             if interactions[i] == v then table.remove(interactions, i); break end
         end
     end)
 
     -- Auto Prompt loop
+    local AUTO_REACH = 18 -- min reach so cabinets/drawers work even without Prompt Range
     local autoTimer = 0
     RunService.Heartbeat:Connect(function(dt)
         if not Toggles.AutoPrompt.Value then return end
+        if LP:GetAttribute("Alive") == false then return end -- never auto-fire while dead
         autoTimer += dt
         if autoTimer < Options.AutoPromptInterval.Value then return end
         autoTimer = 0
@@ -544,13 +561,15 @@ return function(Cora)
             local p = interactions[i]
             if not p or not p.Parent then
                 table.remove(interactions, i)
-            elseif p.Enabled and not isIgnored(p) then
+            elseif p.Enabled and not fired[p] and not isIgnored(p) then
                 local part = getPromptPart(p)
                 if part then
+                    local reach = math.max(p.MaxActivationDistance, AUTO_REACH)
                     local dist = (root.Position - part.Position).Magnitude
-                    if dist <= p.MaxActivationDistance then
+                    if dist <= reach then
                         tryEquipFor(p)
                         firePrompt(p)
+                        fired[p] = true -- fire each prompt once (no cabinet open/close spam)
                     end
                 end
             end
