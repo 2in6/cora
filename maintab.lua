@@ -1,7 +1,7 @@
 --[[
     Cora • TAB FILE: Main  —  goes in /maintab.lua
     (This is a TAB file, NOT the bootstrap. The bootstrap lives in main.lua.)
-    Movement: Walk Speed (+slider), Fast Stop, Speed Bypass (massless), Fly (+speed).
+    Movement: Walk Speed (+slider), Fast Stop, Speed Bypass (unlocks higher speed), Fly (+speed).
     Inspired by common public Doors movement scripts.
 --]]
 
@@ -49,30 +49,10 @@ return function(Cora)
         if humanoid then pcall(function() humanoid.PlatformStand = true end) end
     end
 
-    local function applyMassless(state)
-        if not character then return end
-        for _, p in ipairs(character:GetDescendants()) do
-            if p:IsA("BasePart") and p ~= hrp then
-                pcall(function() p.Massless = state end)
-            end
-        end
-    end
-
     local function onCharacter(char)
         character = char
         humanoid  = char:WaitForChild("Humanoid", 10)
         hrp       = char:WaitForChild("HumanoidRootPart", 10)
-
-        -- Re-apply massless if Speed Bypass is on
-        if Toggles.SpeedBypass and Toggles.SpeedBypass.Value then
-            applyMassless(true)
-        end
-        -- Keep new parts massless while enabled
-        char.DescendantAdded:Connect(function(d)
-            if d:IsA("BasePart") and d ~= hrp and Toggles.SpeedBypass and Toggles.SpeedBypass.Value then
-                pcall(function() d.Massless = true end)
-            end
-        end)
 
         -- Restart fly if it was on when we respawned
         if flyEnabled then startFly() end
@@ -84,10 +64,18 @@ return function(Cora)
     ----------------------------------------------------------------
     -- UI
     ----------------------------------------------------------------
-    -- Home icon (download -> asset, fallback to lucide "home")
-    local homeIcon = "home"
+    -- Home icon: download -> asset (same proven method as the Settings gear).
+    -- Fallback to lucide "house" if the executor can't make custom assets.
+    local homeIcon = "house"
     pcall(function()
         if writefile and getcustomasset then
+            -- Clear a previously corrupt/empty cached download, if any.
+            if isfile and isfile("cora_home.png") then
+                local ok, data = pcall(readfile, "cora_home.png")
+                if ok and (not data or #data < 100) and delfile then
+                    pcall(delfile, "cora_home.png")
+                end
+            end
             if not (isfile and isfile("cora_home.png")) then
                 writefile("cora_home.png", game:HttpGet(
                     "https://i.ibb.co/Qz0ZKBh/home-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
@@ -97,7 +85,9 @@ return function(Cora)
         end
     end)
 
-    local MainTab = Window:AddTab("Main", homeIcon, "Main Features")
+    -- 2-arg form matches the working Settings-gear tab; description set separately.
+    local MainTab = Window:AddTab("Main", homeIcon)
+    pcall(function() MainTab:SetDescription("Main Features") end)
     Cora.Tabs.Main = MainTab
 
     local Movement = MainTab:AddLeftGroupbox("Movement", "footprints")
@@ -168,10 +158,11 @@ return function(Cora)
         end
     end)
 
-    -- Speed Bypass: massless on/off + extend the Walk Speed slider max
+    -- Speed Bypass: unlock the higher Walk Speed range only. No physics changes.
+    -- (Setting the live character's parts massless is what froze you; real Doors
+    --  scripts apply massless to a cloned collision part, not the character.)
     Toggles.SpeedBypass:OnChanged(function()
         local on = Toggles.SpeedBypass.Value
-        applyMassless(on)
         pcall(function()
             if Options.WalkSpeedValue.SetMax then
                 Options.WalkSpeedValue:SetMax(on and 100 or 25)
