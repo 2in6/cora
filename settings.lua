@@ -12,15 +12,21 @@ return function(Cora)
 
     -- Custom gear icon: download -> usable asset (same trick as the moon).
     -- Falls back to lucide "settings" if the executor lacks custom assets.
+    pcall(function()
+        if makefolder and not (isfolder and isfolder("CoraData")) then
+            makefolder("CoraData")
+        end
+    end)
     local gearIcon = "settings"
     pcall(function()
         if writefile and getcustomasset then
-            if not (isfile and isfile("cora_gear.png")) then
-                writefile("cora_gear.png", game:HttpGet(
+            local path = "CoraData/cora_gear.png"
+            if not (isfile and isfile(path)) then
+                writefile(path, game:HttpGet(
                     "https://i.ibb.co/LDcRHNM0/settings-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
                 ))
             end
-            gearIcon = getcustomasset("cora_gear.png")
+            gearIcon = getcustomasset(path)
         end
     end)
 
