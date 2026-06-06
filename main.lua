@@ -84,17 +84,8 @@ return function(Cora)
     ThemeManager:SetFolder("Cora")
     SaveManager:SetFolder("Cora")
 
-    -- Tabs (order = creation order)
-    Cora.fetch("maintab.lua")()(Cora)
-    Cora.fetch("visualstab.lua")()(Cora)
-    Cora.fetch("settings.lua")()(Cora)
-
-    -- Autoload config, then re-assert the white accent so it wins
-    pcall(function() SaveManager:LoadAutoloadConfig() end)
-    applyCoraScheme()
-
-    -- Expose a clean unload so a future run (or the Unload button) can tear this
-    -- instance down instead of stacking another window on top.
+    -- Register the unload handle NOW (right after the window exists), so the
+    -- single-instance guard works even if a tab errors while loading.
     if getgenv then
         getgenv().CoraUnload = function()
             pcall(function() Library:Unload() end)
@@ -106,4 +97,23 @@ return function(Cora)
             getgenv().CoraUnload = nil
         end
     end
+
+    -- Load each tab in isolation. If one tab errors it must NOT stop the others
+    -- (this is why Settings stopped loading before), and the real error is shown.
+    local function loadTab(file)
+        local ok, err = pcall(function() Cora.fetch(file)()(Cora) end)
+        if not ok then
+            warn("[Cora] tab '" .. file .. "' failed: " .. tostring(err))
+            pcall(function()
+                Library:Notify("[Cora] " .. file .. " error: " .. tostring(err), 8)
+            end)
+        end
+    end
+    loadTab("maintab.lua")
+    loadTab("visualstab.lua")
+    loadTab("settings.lua")
+
+    -- Autoload config, then re-assert the white accent so it wins
+    pcall(function() SaveManager:LoadAutoloadConfig() end)
+    applyCoraScheme()
 end
