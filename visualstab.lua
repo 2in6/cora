@@ -289,10 +289,10 @@ return function(Cora)
         local rooms = workspace:FindFirstChild("CurrentRooms")
         if rooms then
             if Toggles.DoorESP.Value then
-                -- only the door of the room you're currently in (the one ahead),
-                -- so doors you've already passed drop out of `desired` and get
-                -- unloaded on the very next scan instead of lingering. The whole
-                -- Door MODEL is the target, so the entire door is highlighted.
+                -- only the door of the room you're currently in (and the one just
+                -- ahead), so passed doors unload immediately. Highlight the door
+                -- PANEL part - highlighting the whole Door model grabs its large
+                -- invisible bounds and looks stretched.
                 local cur = tonumber(LP:GetAttribute("CurrentRoom"))
                 for _, room in ipairs(rooms:GetChildren()) do
                     local door = room:FindFirstChild("Door")
@@ -300,8 +300,11 @@ return function(Cora)
                         local rid = tonumber(room.Name) or tonumber(door:GetAttribute("RoomID"))
                         local show = (not cur) or (rid and rid >= cur and rid <= cur + 1)
                         if show then
-                            local id = door:GetAttribute("RoomID") or room.Name
-                            desired[door] = { cat = "Door", text = "Door [" .. tostring(id) .. "]" }
+                            local doorPart = door:FindFirstChild("Door") or door.PrimaryPart
+                            if doorPart then
+                                local id = door:GetAttribute("RoomID") or room.Name
+                                desired[doorPart] = { cat = "Door", text = "Door [" .. tostring(id) .. "]" }
+                            end
                         end
                     end
                 end
@@ -391,6 +394,147 @@ return function(Cora)
                     pcall(function() tracers[obj]:Remove() end)
                     tracers[obj] = nil
                 end
+            end
+        end)
+    end)
+
+    ----------------------------------------------------------------
+    -- Camera (custom FOV)
+    ----------------------------------------------------------------
+    local DEFAULT_FOV = 70
+    local Camera = VisualsTab:AddLeftGroupbox("Camera", "video")
+    Camera:AddToggle("CustomFOV", { Text = "Field Of View", Default = false })
+    Camera:AddSlider("FOVValue", {
+        Text = "Field Of View", Default = DEFAULT_FOV, Min = 70, Max = 120, Rounding = 0,
+    })
+
+    -- when turned off, snap back to the default FOV once
+    watch("CustomFOV", function(v)
+        if not v then
+            pcall(function()
+                if workspace.CurrentCamera then workspace.CurrentCamera.FieldOfView = DEFAULT_FOV end
+            end)
+        end
+    end)
+    -- while on, hold the chosen FOV every frame (so the game can't override it)
+    RunService.RenderStepped:Connect(function()
+        pcall(function()
+            if Toggles.CustomFOV and Toggles.CustomFOV.Value then
+                local cam = workspace.CurrentCamera
+                if cam then cam.FieldOfView = Options.FOVValue.Value end
+            end
+        end)
+    end)
+
+    ----------------------------------------------------------------
+    -- Notifications (entity notifier + custom sounds)
+    ----------------------------------------------------------------
+    -- file.kiwi links can't be HttpGet'd (they're encrypted download pages), so
+    -- the sounds are pulled from the repo's /sounds folder. Upload the 7 files
+    -- there as the names below; they download + cache to disk on first launch.
+    local SOUND_BASE = "https://raw.githubusercontent.com/2in6/cora/main/sounds/"
+    local SOUNDS = {
+        { name = "Apple Pay",     file = "applepay.ogg" },
+        { name = "Fah",           file = "fah.ogg" },
+        { name = "Geometry Dash", file = "geometrydash.ogg" },
+        { name = "Screech",       file = "screech.ogg" },
+        { name = "Greed",         file = "greed.ogg" },
+        { name = "Badge",         file = "badge.ogg" },
+        { name = "Samsunify",     file = "samsunify.ogg" },
+    }
+    local soundNames = {}
+    for _, s in ipairs(SOUNDS) do table.insert(soundNames, s.name) end
+
+    local soundAssets = {}   -- name -> custom asset uri
+    local canFiles = (writefile and isfile and readfile) and true or false
+    if canFiles then
+        pcall(function()
+            if makefolder and isfolder and not isfolder("CoraData/sounds") then
+                makefolder("CoraData/sounds")
+            end
+        end)
+        task.spawn(function()
+            for _, s in ipairs(SOUNDS) do
+                local path = "CoraData/sounds/" .. s.file
+                pcall(function()
+                    if not isfile(path) then
+                        writefile(path, game:HttpGet(SOUND_BASE .. s.file))
+                    end
+                    if getcustomasset then soundAssets[s.name] = getcustomasset(path) end
+                end)
+            end
+        end)
+    end
+
+    local notifSound = Instance.new("Sound")
+    notifSound.Name   = "CoraNotifSound"
+    notifSound.Volume = 1
+    pcall(function() notifSound.Parent = game:GetService("SoundService") end)
+
+    local function playSound(name)
+        local id = soundAssets[name]
+        if not id then
+            pcall(function() Library:Notify("Sound '" .. tostring(name) .. "' not downloaded yet.", 3) end)
+            return
+        end
+        pcall(function()
+            notifSound.SoundId = id
+            notifSound.TimePosition = 0
+            notifSound:Play()
+        end)
+    end
+
+    local Notif = VisualsTab:AddRightGroupbox("Notifications", "bell")
+    Notif:AddToggle("EntityNotifier", { Text = "Entity Notifier", Default = false })
+    Notif:AddDropdown("EntityNotifierSound", {
+        Text    = "Entity Notifier Sound",
+        Values  = soundNames,
+        Default = soundNames[1],
+        Multi   = false,
+        Callback = function(value)        -- preview the sound on selection
+            playSound(value)
+        end,
+    })
+
+    -- Entity notifier: announce + play the chosen sound when a new entity appears.
+    local NotifEntities = {
+        RushMoving = "Rush", AmbushMoving = "Ambush", A60 = "A-60", A120 = "A-120",
+        GlitchRush = "Glitch Rush", GlitchAmbush = "Glitch Ambush", Eyes = "Eyes",
+        Lookman = "Eyes", BackdoorRush = "Blitz", BackdoorLookman = "Lookman",
+        JeffTheKiller = "Jeff", FigureRig = "Figure", FigureRagdoll = "Figure",
+        GrumbleRig = "Grumble", Groundskeeper = "Groundskeeper", MandrakeLive = "Mandrake",
+        LiveEntityBramble = "Bramble", GiggleCeiling = "Giggle", Snare = "Snare",
+    }
+    local notifSeen = {}
+    local notifTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        notifTimer += dt
+        if notifTimer < 0.25 then return end
+        notifTimer = 0
+        pcall(function()
+            if not (Toggles.EntityNotifier and Toggles.EntityNotifier.Value) then
+                if next(notifSeen) then notifSeen = {} end
+                return
+            end
+            local found = {}
+            local function check(inst)
+                local disp = NotifEntities[inst.Name]
+                if disp then
+                    found[inst] = true
+                    if not notifSeen[inst] then
+                        notifSeen[inst] = true
+                        Library:Notify(disp .. " has spawned!", 4)
+                        local sel = Options.EntityNotifierSound and Options.EntityNotifierSound.Value
+                        if sel then playSound(sel) end
+                    end
+                end
+            end
+            for _, v in ipairs(workspace:GetChildren()) do check(v) end
+            local rooms = workspace:FindFirstChild("CurrentRooms")
+            if rooms then for _, v in ipairs(rooms:GetDescendants()) do check(v) end end
+            -- forget entities that despawned, so they re-notify next time
+            for inst in pairs(notifSeen) do
+                if not found[inst] then notifSeen[inst] = nil end
             end
         end)
     end)
