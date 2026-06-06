@@ -71,6 +71,30 @@ return function(Cora)
         end
     end
 
+    -- Anti A-90: swap the real A90 remote with a dud (same trick as Screech).
+    local FakeA90, a90On
+    pcall(function()
+        if rf then
+            FakeA90 = Instance.new("RemoteEvent")
+            FakeA90.Name = "A90_"
+            FakeA90.Parent = rf
+        end
+    end)
+    local function onA90(v)
+        if not (rf and FakeA90) then return end
+        if v then
+            pcall(function() if rf:FindFirstChild("A90") then rf.A90.Name = "A90_" end end)
+            pcall(function() FakeA90.Name = "A90" end)
+            a90On = true
+        elseif a90On then
+            pcall(function()
+                local s = rf:FindFirstChild("A90_")
+                if s and s ~= FakeA90 then s.Name = "A90" end
+            end)
+            pcall(function() FakeA90.Name = "A90_" end)
+        end
+    end
+
     -- Anti Dread: rename the Dread instance so its module stops finding it.
     local function onDread(v)
         pcall(function()
@@ -121,10 +145,10 @@ return function(Cora)
     ----------------------------------------------------------------
     local Entities = AntiTab:AddLeftGroupbox("Entities", "ghost")
     add(Entities, "AntiScreech",       "Anti Screech",        onScreech)
+    add(Entities, "AntiA90",           "Anti A-90",           onA90)
     add(Entities, "AntiEyes",          "Anti Eyes")           -- loop below
     add(Entities, "AntiHalt",          "Anti Halt",           onHalt)
     add(Entities, "AntiDread",         "Anti Dread",          onDread)
-    add(Entities, "AntiHide",          "Anti Hide")           -- toggle only (no ref)
     add(Entities, "AntiFigureHearing", "Anti Figure Hearing") -- loop below
     add(Entities, "AntiLookman",       "Anti Lookman")        -- loop below
     add(Entities, "AntiSnare",         "Anti Snare",          rescanCanTouch)
@@ -132,7 +156,6 @@ return function(Cora)
     local Misc = AntiTab:AddRightGroupbox("Misc", "ban")
     add(Misc, "NoSpiderJumpscare",   "No Spider Jumpscare Visual") -- GUI hook below
     add(Misc, "AntiDupe",            "Anti Dupe",                 rescanCanTouch)
-    add(Misc, "AntiJack",            "Anti Jack")                 -- toggle only (no ref)
     add(Misc, "AntiGiggle",          "Anti Giggle",               rescanCanTouch)
     add(Misc, "AntiSeekObstructions","Anti Seek Obstructions",    rescanCanTouch)
 
