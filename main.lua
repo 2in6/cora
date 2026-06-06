@@ -8,6 +8,15 @@
 --]]
 
 return function(Cora)
+    local Players = game:GetService("Players")
+    local LP      = Players.LocalPlayer
+
+    -- Single instance: tear down any previous Cora before building a new one,
+    -- so re-running doesn't stack multiple windows.
+    pcall(function()
+        if getgenv and getgenv().CoraUnload then getgenv().CoraUnload() end
+    end)
+
     local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
 
     local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
@@ -83,4 +92,18 @@ return function(Cora)
     -- Autoload config, then re-assert the white accent so it wins
     pcall(function() SaveManager:LoadAutoloadConfig() end)
     applyCoraScheme()
+
+    -- Expose a clean unload so a future run (or the Unload button) can tear this
+    -- instance down instead of stacking another window on top.
+    if getgenv then
+        getgenv().CoraUnload = function()
+            pcall(function() Library:Unload() end)
+            pcall(function()
+                local pg = LP:FindFirstChild("PlayerGui")
+                local kg = pg and pg:FindFirstChild("CoraKeySystem")
+                if kg then kg:Destroy() end
+            end)
+            getgenv().CoraUnload = nil
+        end
+    end
 end
