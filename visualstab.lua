@@ -219,7 +219,7 @@ return function(Cora)
     espRow("ObjectiveESP", "Objective ESP", "Objective")
     espRow("EntityESP",    "Entity ESP",    "Entity")
     espRow("HazardESP",    "Hazard ESP",    "Hazard")
-    ESP:AddSlider("ESPTextSize", { Text = "Text Size", Default = 14, Min = 8, Max = 28, Rounding = 0 })
+    ESP:AddSlider("ESPTextSize", { Text = "Text Size", Default = 18, Min = 10, Max = 40, Rounding = 0 })
     ESP:AddToggle("ShowTracers", { Text = "Show Tracers", Default = false })
 
     -- manager
@@ -244,10 +244,12 @@ return function(Cora)
         local part = adornPart(obj)
         local bb, lbl
         if part then
+            local h = Options.ESPTextSize.Value * 2
             bb = Instance.new("BillboardGui")
-            bb.Size = UDim2.new(0, 220, 0, 26)
+            bb.Size = UDim2.fromOffset(320, h)
             bb.AlwaysOnTop = true
             bb.StudsOffset = Vector3.new(0, 2.5, 0)
+            bb.LightInfluence = 0
             bb.Adornee = part
             lbl = Instance.new("TextLabel")
             lbl.BackgroundTransparency = 1
@@ -255,7 +257,7 @@ return function(Cora)
             lbl.Font = Enum.Font.GothamBold
             lbl.TextColor3 = color
             lbl.TextStrokeTransparency = 0.4
-            lbl.TextSize = Options.ESPTextSize.Value
+            lbl.TextScaled = true          -- fill the billboard, so size tracks the slider
             lbl.Parent = bb
             pcall(function() bb.Parent = obj end)
         end
@@ -358,7 +360,8 @@ return function(Cora)
                 if e then
                     local c = catColor(e.cat)
                     if e.hl then e.hl.FillColor = c; e.hl.OutlineColor = c end
-                    if e.lbl then e.lbl.TextColor3 = c; e.lbl.TextSize = Options.ESPTextSize.Value; e.lbl.Text = info.text end
+                    if e.lbl then e.lbl.TextColor3 = c; e.lbl.Text = info.text end
+                    if e.bb then e.bb.Size = UDim2.fromOffset(320, Options.ESPTextSize.Value * 2) end
                 end
             end
             for obj, e in pairs(espMap) do
@@ -504,6 +507,10 @@ return function(Cora)
         JeffTheKiller = "Jeff", FigureRig = "Figure", FigureRagdoll = "Figure",
         GrumbleRig = "Grumble", Groundskeeper = "Groundskeeper", MandrakeLive = "Mandrake",
         LiveEntityBramble = "Bramble", GiggleCeiling = "Giggle", Snare = "Snare",
+        -- non-"moving" entities/hazards that also spawn as named instances
+        Screech = "Screech", A90 = "A-90", Void = "A-90", Seek = "Seek",
+        SeekMoving = "Seek", GloomEgg = "Gloom Egg", Timothy = "Spider",
+        Spider = "Spider", Dupe = "Dupe", Window = "Window",
     }
     local notifSeen = {}
     local notifTimer = 0
