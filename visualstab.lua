@@ -334,52 +334,56 @@ return function(Cora)
         scanTimer += dt
         if scanTimer < 0.4 then return end
         scanTimer = 0
-        local anyOn = Toggles.PlayerESP.Value or Toggles.DoorESP.Value or Toggles.ItemESP.Value
-            or Toggles.GoldESP.Value or Toggles.ObjectiveESP.Value or Toggles.EntityESP.Value
-            or Toggles.HazardESP.Value
-        if not anyOn and next(espMap) == nil then return end
+        pcall(function()
+            local anyOn = Toggles.PlayerESP.Value or Toggles.DoorESP.Value or Toggles.ItemESP.Value
+                or Toggles.GoldESP.Value or Toggles.ObjectiveESP.Value or Toggles.EntityESP.Value
+                or Toggles.HazardESP.Value
+            if not anyOn and next(espMap) == nil then return end
 
-        local desired = anyOn and collectDesired() or {}
-        for obj, info in pairs(desired) do
-            addESP(obj, info.cat)
-            local e = espMap[obj]
-            if e then
-                local c = catColor(e.cat)
-                if e.hl then e.hl.FillColor = c; e.hl.OutlineColor = c end
-                if e.lbl then e.lbl.TextColor3 = c; e.lbl.TextSize = Options.ESPTextSize.Value; e.lbl.Text = info.text end
+            local desired = anyOn and collectDesired() or {}
+            for obj, info in pairs(desired) do
+                addESP(obj, info.cat)
+                local e = espMap[obj]
+                if e then
+                    local c = catColor(e.cat)
+                    if e.hl then e.hl.FillColor = c; e.hl.OutlineColor = c end
+                    if e.lbl then e.lbl.TextColor3 = c; e.lbl.TextSize = Options.ESPTextSize.Value; e.lbl.Text = info.text end
+                end
             end
-        end
-        for obj, e in pairs(espMap) do
-            if not desired[obj] or not obj.Parent then removeESP(obj) end
-        end
+            for obj, e in pairs(espMap) do
+                if not desired[obj] or not obj.Parent then removeESP(obj) end
+            end
+        end)
     end)
 
     -- tracers: line from bottom-centre of the screen to each ESP object
     RunService.RenderStepped:Connect(function()
-        local cam = workspace.CurrentCamera
-        local showT = hasDrawing and Toggles.ShowTracers and Toggles.ShowTracers.Value
-        if not cam then return end
-        for obj, e in pairs(espMap) do
-            if showT and obj.Parent then
-                local part = (e.part and e.part.Parent) and e.part or adornPart(obj)
-                if part then
-                    local sp, onScreen = cam:WorldToViewportPoint(part.Position)
-                    local tr = tracers[obj]
-                    if not tr then
-                        tr = Drawing.new("Line"); tr.Thickness = 1
-                        tracers[obj] = tr
+        pcall(function()
+            local cam = workspace.CurrentCamera
+            local showT = hasDrawing and Toggles.ShowTracers and Toggles.ShowTracers.Value
+            if not cam then return end
+            for obj, e in pairs(espMap) do
+                if showT and obj.Parent then
+                    local part = (e.part and e.part.Parent) and e.part or adornPart(obj)
+                    if part then
+                        local sp, onScreen = cam:WorldToViewportPoint(part.Position)
+                        local tr = tracers[obj]
+                        if not tr then
+                            tr = Drawing.new("Line"); tr.Thickness = 1
+                            tracers[obj] = tr
+                        end
+                        tr.Color = catColor(e.cat)
+                        tr.Visible = onScreen
+                        if onScreen then
+                            tr.From = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y)
+                            tr.To = Vector2.new(sp.X, sp.Y)
+                        end
                     end
-                    tr.Color = catColor(e.cat)
-                    tr.Visible = onScreen
-                    if onScreen then
-                        tr.From = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y)
-                        tr.To = Vector2.new(sp.X, sp.Y)
-                    end
+                elseif tracers[obj] then
+                    pcall(function() tracers[obj]:Remove() end)
+                    tracers[obj] = nil
                 end
-            elseif tracers[obj] then
-                pcall(function() tracers[obj]:Remove() end)
-                tracers[obj] = nil
             end
-        end
+        end)
     end)
 end
