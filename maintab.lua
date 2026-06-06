@@ -151,12 +151,12 @@ return function(Cora)
     ----------------------------------------------------------------
     -- God Mode (ported from Supreme Hub: displaces/shrinks the Collision hitbox)
     ----------------------------------------------------------------
-    -- NOTE: Figure (FigureRig/FigureRagdoll), Groundskeeper and Bramble
-    -- (LiveEntityBramble) are intentionally EXCLUDED - god mode doesn't actually
-    -- protect against them, so detecting them just causes needless lagback.
+    -- NOTE: Figure (FigureRig/FigureRagdoll), Groundskeeper, Bramble
+    -- (LiveEntityBramble), Eyes and Lookman are intentionally EXCLUDED - god mode
+    -- doesn't protect against them, so detecting them just causes needless lagback.
     local EntityNames = {
         RushMoving = true, AmbushMoving = true, A60 = true, A120 = true,
-        GlitchRush = true, GlitchAmbush = true, Eyes = true, Lookman = true,
+        GlitchRush = true, GlitchAmbush = true,
         BackdoorRush = true, BackdoorLookman = true, JeffTheKiller = true,
         Snare = true, GrumbleRig = true, MandrakeLive = true,
     }
