@@ -11,11 +11,15 @@ return function(Cora)
     local Players = game:GetService("Players")
     local LP      = Players.LocalPlayer
 
-    -- Single instance: tear down any previous Cora before building a new one,
-    -- so re-running doesn't stack multiple windows.
-    pcall(function()
-        if getgenv and getgenv().CoraUnload then getgenv().CoraUnload() end
-    end)
+    -- Single instance: if Cora is already running, just reveal the existing
+    -- window and STOP. Rebuilding on every execution re-ran the tabs each time,
+    -- which re-applied loops and the __namecall hook - that stacking caused the
+    -- crash and the window flicker. To load a new version, use the Unload button
+    -- in the Settings tab first, then run again.
+    if getgenv and getgenv().CoraLoaded then
+        pcall(function() if getgenv().CoraShow then getgenv().CoraShow() end end)
+        return
+    end
 
     local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
 
@@ -87,6 +91,11 @@ return function(Cora)
     -- Register the unload handle NOW (right after the window exists), so the
     -- single-instance guard works even if a tab errors while loading.
     if getgenv then
+        getgenv().CoraLoaded = true
+        getgenv().CoraShow = function()
+            pcall(function() Library:Notify("Cora is already loaded.", 4) end)
+            pcall(function() Library.Toggled = true end)
+        end
         getgenv().CoraUnload = function()
             pcall(function() Library:Unload() end)
             pcall(function()
@@ -95,6 +104,8 @@ return function(Cora)
                 if kg then kg:Destroy() end
             end)
             getgenv().CoraUnload = nil
+            getgenv().CoraLoaded = nil
+            getgenv().CoraShow   = nil
         end
     end
 
