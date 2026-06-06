@@ -192,4 +192,182 @@ return function(Cora)
             end)
         end)
     end)
+
+    ----------------------------------------------------------------
+    -- Rooms: Auto A-1000 (auto-walk, adapted from GIFKITS Rooms Auto Walk V2)
+    -- Walks to the current room's door; if A-60/A-120 spawn it heads to the
+    -- nearest locker and hides instead (built-in dodge). Enabling it also turns
+    -- on Anti A-90 (and flips that toggle in the GUI).
+    ----------------------------------------------------------------
+    local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+    local PathfindingService = game:GetService("PathfindingService")
+
+    local arf = ReplicatedStorage:FindFirstChild("EntityInfo")
+        or ReplicatedStorage:FindFirstChild("Bricks")
+        or ReplicatedStorage:FindFirstChild("RemotesFolder")
+    local camLock    = arf and arf:FindFirstChild("CamLock")
+    local gd         = ReplicatedStorage:FindFirstChild("GameData")
+    local latestRoom = gd and gd:FindFirstChild("LatestRoom")
+
+    local cameraScript, a90Frame
+    pcall(function()
+        local pg     = LP:FindFirstChild("PlayerGui")
+        local mainUI = pg and pg:FindFirstChild("MainUI")
+        cameraScript = mainUI and mainUI.Initiator.Main_Game:FindFirstChild("Camera")
+        local js     = mainUI and mainUI:FindFirstChild("Jumpscare")
+        a90Frame     = js and js:FindFirstChild("Jumpscare_A90")
+    end)
+
+    local awPath = PathfindingService:CreatePath({ WaypointSpacing = 1, AgentCanJump = true, AgentRadius = 2 })
+    local awChar, awHum, awRoot, awHead
+    local function awUpdateChar()
+        awChar = LP.Character
+        awHum  = awChar and awChar:FindFirstChildOfClass("Humanoid")
+        awRoot = awChar and awChar:FindFirstChild("HumanoidRootPart")
+        awHead = awChar and awChar:FindFirstChild("Head")
+    end
+    awUpdateChar()
+    LP.CharacterAdded:Connect(function() task.wait(0.3); awUpdateChar() end)
+
+    local camLockObject, currentGoal, prevGoal, currentAction, prevAction
+    local waypoints, waypointIndex, lastComputed = {}, 1, 0
+
+    local function awFirePrompt(prompt)
+        if not prompt then return end
+        local part = prompt.Parent
+        if part:IsA("Model") then part = part.PrimaryPart end
+        camLockObject = part
+        task.wait(0.3)
+        pcall(function() fireproximityprompt(prompt) end)
+        task.wait(prompt.HoldDuration)
+        camLockObject = nil
+    end
+
+    local function awGetLocker()
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if not (rooms and awRoot) then return end
+        local closest
+        for _, prompt in ipairs(rooms:GetDescendants()) do
+            if prompt:IsA("ProximityPrompt") and prompt.Name == "HidePrompt" then
+                local locker = prompt.Parent
+                local base   = locker:FindFirstChild("Base")
+                local hidden = locker:FindFirstChild("HiddenPlayer")
+                if base and hidden and not hidden.Value then
+                    if not closest
+                        or (base.Position - awRoot.Position).Magnitude < (closest.Position - awRoot.Position).Magnitude then
+                        closest = base
+                    end
+                end
+            end
+        end
+        return closest
+    end
+
+    local function awCheckAction()
+        if workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120") then return "locker" end
+        return "door"
+    end
+
+    local function awGetGoal()
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        local room  = rooms and latestRoom and rooms:FindFirstChild(tostring(latestRoom.Value))
+        if not room then return end
+        currentAction = awCheckAction()
+        if currentAction ~= "locker" and prevAction == "locker" and camLock then
+            pcall(function() camLock:FireServer() end)
+        end
+        prevAction = currentAction
+        if currentAction == "locker" then return awGetLocker() end
+        local door1 = room:FindFirstChild("Door")
+        return door1 and door1:FindFirstChild("Door")
+    end
+
+    local function awStopPath() waypointIndex = 1; waypoints = {} end
+
+    local function awComplete()
+        if currentAction == "locker" and currentGoal then
+            local locker = currentGoal.Parent
+            local prompt = locker and locker:FindFirstChildOfClass("ProximityPrompt")
+            if not prompt then return end
+            if a90Frame and a90Frame.Visible then
+                repeat task.wait() until not a90Frame.Visible or not state.AutoA1000
+                task.wait(0.2)
+            end
+            awFirePrompt(prompt)
+        end
+    end
+
+    local function awCompute()
+        if not (awRoot and currentGoal) then return end
+        local now = os.clock()
+        if now - lastComputed < 1 and prevGoal == currentGoal then return end
+        lastComputed = now
+        if prevGoal ~= currentGoal then awStopPath() end
+        prevGoal = currentGoal
+        local targetPos = currentGoal.Position
+        if currentAction == "door" then
+            targetPos = targetPos + (-currentGoal.CFrame.LookVector) * 2
+        elseif currentAction == "locker" then
+            targetPos = targetPos + (currentGoal.CFrame.LookVector) * 3
+        end
+        local ok = pcall(function() awPath:ComputeAsync(awRoot.Position, targetPos) end)
+        if ok and awPath.Status == Enum.PathStatus.Success then
+            waypoints = awPath:GetWaypoints()
+            waypointIndex = 2
+            return
+        end
+        prevGoal = nil
+    end
+
+    local Rooms = FloorTab:AddLeftGroupbox("Rooms", "door-open")
+    add(Rooms, "AutoA1000", "Auto A-1000", function(v)
+        if v then
+            -- auto-enable Anti A-90 (also flips its toggle in the GUI)
+            pcall(function() if Toggles.AntiA90 then Toggles.AntiA90:SetValue(true) end end)
+        else
+            awStopPath(); prevGoal = nil; camLockObject = nil
+            pcall(function()
+                if awRoot then awRoot.CanCollide = true end
+                local col = awChar and awChar:FindFirstChild("Collision")
+                if col then col.CanCollide = true end
+                if cameraScript then cameraScript.Enabled = true end
+            end)
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function(dt)
+        if not state.AutoA1000 then return end
+        pcall(function()
+            if not (awHum and awRoot and awHead) then awUpdateChar() end
+            if not (awHum and awRoot) then return end
+
+            -- look at the hide target while hiding, otherwise hand camera back
+            if camLockObject and awHead and cameraScript then
+                cameraScript.Enabled = false
+                local target = CFrame.new(awHead.CFrame.Position, camLockObject.Position)
+                workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(target, dt * 12)
+            elseif cameraScript then
+                cameraScript.Enabled = true
+            end
+
+            -- noclip while walking so doorways don't snag the path
+            awRoot.CanCollide = false
+            local col = awChar:FindFirstChild("Collision")
+            if col then col.CanCollide = false end
+
+            currentGoal = awGetGoal()
+            if not currentGoal then return end
+            awCompute()
+
+            if waypointIndex > #waypoints then awStopPath() return end
+            local targetPos = waypoints[waypointIndex].Position
+            local offset = (targetPos - awRoot.Position) * Vector3.new(1, 0, 1)
+            if offset.Magnitude < 2 then
+                waypointIndex += 1
+                if waypointIndex > #waypoints then awComplete() end
+            else
+                awHum:MoveTo(targetPos)
+            end
+        end)
+    end)
 end
