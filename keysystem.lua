@@ -14,6 +14,15 @@ return function(Cora)
     local LocalPlayer = Players.LocalPlayer
     local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
 
+    -- Already verified earlier this session? Don't show the UI again.
+    if getgenv and getgenv().SCRIPT_KEY then return true end
+
+    -- Remove any leftover key UI from a previous run (prevents stacked prompts).
+    pcall(function()
+        local old = PlayerGui:FindFirstChild("CoraKeySystem")
+        if old then old:Destroy() end
+    end)
+
     -- All Cora files live in the CoraData folder
     pcall(function()
         if makefolder and not (isfolder and isfolder("CoraData")) then
