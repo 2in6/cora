@@ -47,6 +47,7 @@ return function(Cora)
     local flyBV
     local CollisionClone
     local godApplied = false
+    local godSnap    = nil   -- captured real default hitbox values
 
     ----------------------------------------------------------------
     -- Fly helpers
@@ -97,6 +98,7 @@ return function(Cora)
         hrp       = char:WaitForChild("HumanoidRootPart", 10)
         CollisionClone = nil
         godApplied = false
+        godSnap    = nil
         if flyEnabled then startFly() end
     end
     LP.CharacterAdded:Connect(onCharacter)
@@ -183,9 +185,30 @@ return function(Cora)
         return false
     end
 
+    -- Capture the character's REAL default hitbox values ONCE, before god ever
+    -- modifies them, so godDisable can restore them exactly. (Previously it
+    -- restored hardcoded guesses, which left the hitbox the wrong size after an
+    -- entity passed and god auto-disabled - that's what broke vent-climbing.)
+    local function snapshotGod()
+        local char = LP.Character
+        if not char then return end
+        local hum  = char:FindFirstChildOfClass("Humanoid")
+        local col  = char:FindFirstChild("Collision")
+        local cc   = col and col:FindFirstChild("CollisionCrouch")
+        local lt   = char:FindFirstChild("LowerTorso")
+        local root = lt and lt:FindFirstChild("Root")
+        godSnap = {
+            hip        = hum and hum.HipHeight,
+            colSize    = col and col.Size,
+            crouchSize = cc and cc.Size,
+            c1         = root and root.C1,
+        }
+    end
+
     local function godEnable()
         local char = LP.Character
         if not char then return end
+        if not godSnap then snapshotGod() end   -- grab true defaults first
         local rf = getRemotes()
         if rf and rf.Name ~= "RemotesFolder" then
             local col = char:FindFirstChild("Collision")
@@ -205,13 +228,16 @@ return function(Cora)
             local col = char:FindFirstChild("Collision")
             local lt  = char:FindFirstChild("LowerTorso")
             local cp  = char:FindFirstChild("CollisionPart")
-            if hum then hum.HipHeight = 2.4 end
+            local snap = godSnap or {}
+            -- restore the EXACT captured defaults (only fall back if we somehow
+            -- never snapshotted, e.g. god was applied before the char loaded)
+            if hum and snap.hip then hum.HipHeight = snap.hip end
             if col then
-                col.Size = Vector3.new(5.5, 3, 3)
+                if snap.colSize then col.Size = snap.colSize end
                 local cc = col:FindFirstChild("CollisionCrouch")
-                if cc then cc.Size = Vector3.new(5.5, 3, 3) end
+                if cc and snap.crouchSize then cc.Size = snap.crouchSize end
             end
-            if lt and lt:FindFirstChild("Root") then lt.Root.C1 = CFrame.new(0, 0, 0) end
+            if lt and lt:FindFirstChild("Root") and snap.c1 then lt.Root.C1 = snap.c1 end
             if cp then pcall(function() char:PivotTo(cp.CFrame * CFrame.new(0, 2, 0)) end) end
         else
             local col = char:FindFirstChild("Collision")
