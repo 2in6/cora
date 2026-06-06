@@ -515,9 +515,9 @@ return function(Cora)
     Prompts:AddSlider("AutoPromptInterval", { Text = "Auto Prompt Interval", Default = 0.05, Min = 0, Max = 0.15, Rounding = 2, Suffix = "s" })
 
     local Useful = MainTab:AddLeftGroupbox("Useful", "wrench")
-    Useful:AddToggle("AutoHeartbeat", { Text = "Auto Heartbeat Mini-Game", Default = false })
-    Useful:AddToggle("AutoSolveLibrary", { Text = "Auto Solve Library", Default = false })
-    Useful:AddToggle("AutoBreaker", { Text = "Auto Breaker Box", Default = false })
+    Useful:AddToggle("Phase", { Text = "Phase", Default = false })
+    Toggles.Phase:AddKeyPicker("PhaseKeybind", { Default = "None", SyncToggleState = true, Mode = "Hold", Text = "Phase", NoUI = false })
+    Useful:AddLabel("Get up to a non full wall and it's recommended to set this as a hold keybind and then just hold, it's slowly going to clip you trough, glitch still has the ability to set you back.", true)
 
     local Manual = MainTab:AddRightGroupbox("Manual", "hand")
     Manual:AddButton({ Text = "Kill Self",  Func = killSelf })
@@ -595,7 +595,7 @@ return function(Cora)
                 if Toggles.InstantPrompt.Value then pcall(applyInstant, v, true) end
                 if Toggles.AutoPrompt.Value    then table.insert(interactions, v) end
             end)
-        elseif v.Name == "ElevatorBreaker" and Toggles.AutoBreaker.Value then
+        elseif v.Name == "ElevatorBreaker" and Toggles.AutoBreaker and Toggles.AutoBreaker.Value then
             breaker(v)
         end
     end)
@@ -732,7 +732,7 @@ return function(Cora)
 
     local libTimer = 0
     RunService.Heartbeat:Connect(function(dt)
-        if not Toggles.AutoSolveLibrary.Value then return end
+        if not (Toggles.AutoSolveLibrary and Toggles.AutoSolveLibrary.Value) then return end
         libTimer += dt
         if libTimer < 0.4 then return end
         libTimer = 0
@@ -756,6 +756,54 @@ return function(Cora)
                 local PL = rf and rf:FindFirstChild("PL")
                 if PL then PL:FireServer(code) end
             end
+        end)
+    end)
+
+    -- Phase (Supreme's "Manipulation"/Velocity method): noclip + a gentle forward
+    -- push so you slowly clip through a wall. Best used on a Hold keybind.
+    watch(tval("Phase"), function(v)
+        if v then return end
+        local char = LP.Character
+        if not char then return end
+        for _, p in ipairs(char:GetChildren()) do
+            if p:IsA("BasePart") and p.Name ~= "CollisionClone" and p.Name ~= "Collision" and not p.CanCollide then
+                p.CanCollide = true
+            end
+        end
+        local col = char:FindFirstChild("Collision")
+        if col then
+            col.CanCollide = (col.CollisionGroup ~= "PlayerCrouching")
+            local cc = col:FindFirstChild("CollisionCrouch")
+            if cc then cc.CanCollide = col.CanCollide end
+        end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local bv = hrp and hrp:FindFirstChild("CoraPhaseVelocity")
+        if bv then bv:Destroy() end
+    end)
+    RunService.Heartbeat:Connect(function()
+        pcall(function()
+            if not (Toggles.Phase and Toggles.Phase.Value) then return end
+            local char = LP.Character
+            local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            for _, p in ipairs(char:GetChildren()) do
+                if p:IsA("BasePart") and p.Name ~= "CollisionClone" and p.CanCollide then p.CanCollide = false end
+            end
+            local col = char:FindFirstChild("Collision")
+            if col then
+                col.CanCollide = false
+                local cc = col:FindFirstChild("CollisionCrouch")
+                if cc then cc.CanCollide = false end
+            end
+            local bv = hrp:FindFirstChild("CoraPhaseVelocity")
+            if not bv then
+                bv = Instance.new("BodyVelocity")
+                bv.Name = "CoraPhaseVelocity"
+                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                bv.Parent = hrp
+            end
+            local lv = hrp.CFrame.LookVector * 2
+            bv.Velocity = Vector3.new(lv.X, lv.Y, lv.Z)
         end)
     end)
 
