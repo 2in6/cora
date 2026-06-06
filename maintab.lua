@@ -4,6 +4,8 @@
     Movement / Prompt Exploits / Useful / Manual.
     Toggle effects are driven by a state-watcher loop (diffs .Value each frame),
     so they apply the moment a toggle changes - no re-toggle needed.
+    Auto Prompt fires on ProximityPromptService.PromptShown (the moment Doors
+    shows a prompt for you), which is the reliable way to auto-interact.
 --]]
 
 return function(Cora)
@@ -16,6 +18,7 @@ return function(Cora)
     local RunService       = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
     local ReplicatedStorage= game:GetService("ReplicatedStorage")
+    local PromptService    = game:GetService("ProximityPromptService")
     local LP               = Players.LocalPlayer
 
     ----------------------------------------------------------------
@@ -122,49 +125,51 @@ return function(Cora)
         end)
     end
 
+    -- Trigger a GUI button's handlers directly (works without a real mouse click)
+    local function fireButton(b)
+        local sigs = { "MouseButton1Click", "Activated", "MouseButton1Down", "MouseButton1Up" }
+        if getconnections then
+            for _, s in ipairs(sigs) do
+                pcall(function()
+                    for _, c in ipairs(getconnections(b[s])) do
+                        if c.Fire then c:Fire() elseif c.Function then c.Function() end
+                    end
+                end)
+            end
+        end
+        if firesignal then
+            for _, s in ipairs(sigs) do
+                pcall(function() firesignal(b[s]) end)
+            end
+        end
+    end
+
     local function clickButton(matches)
         local pg = LP:FindFirstChild("PlayerGui")
         if not pg then return false end
+        local hit = false
         for _, b in ipairs(pg:GetDescendants()) do
             if b:IsA("GuiButton") then
                 local label = (((b:IsA("TextButton")) and b.Text) or "") .. " " .. b.Name
                 label = label:lower()
                 for _, m in ipairs(matches) do
                     if label:find(m) then
-                        if firesignal then
-                            pcall(function() firesignal(b.MouseButton1Click) end)
-                            pcall(function() firesignal(b.Activated) end)
-                            return true
-                        end
+                        fireButton(b)
+                        hit = true
+                        break
                     end
                 end
             end
         end
-        return false
+        return hit
     end
-    local function playAgain() clickButton({ "play again", "playagain", "retry" }) end
-    local function lobby()     clickButton({ "lobby" }) end
+    local function playAgain() clickButton({ "play again", "playagain", "again", "retry", "rejoin", "respawn" }) end
+    local function lobby()     clickButton({ "lobby", "menu", "leave", "exit" }) end
 
     ----------------------------------------------------------------
     -- Prompt helpers
     ----------------------------------------------------------------
     local fireprompt = fireproximityprompt -- executor fn (may be nil)
-
-    local function getPromptPart(p)
-        local par = p.Parent
-        if not par then return nil end
-        if par:IsA("BasePart") then return par end
-        if par:IsA("Model") and par.PrimaryPart then return par.PrimaryPart end
-        local bp = par:FindFirstChildWhichIsA("BasePart")
-        if bp then return bp end
-        local a = par.Parent
-        while a and a ~= workspace and a ~= game do
-            if a:IsA("BasePart") then return a end
-            if a:IsA("Model") and a.PrimaryPart then return a.PrimaryPart end
-            a = a.Parent
-        end
-        return nil
-    end
 
     local function applyClip(p, on)
         if on then
@@ -259,14 +264,8 @@ return function(Cora)
         end
     end
 
-    local interactions = {}
+    -- fire-once guard so cabinets/drawers don't get opened then closed again
     local fired = {}
-    local function rebuildInteractions()
-        table.clear(interactions)
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("ProximityPrompt") then table.insert(interactions, v) end
-        end
-    end
 
     ----------------------------------------------------------------
     -- Useful helpers
@@ -351,7 +350,7 @@ return function(Cora)
     end
 
     ----------------------------------------------------------------
-    -- Tab (lucide icon now that the library renders them)
+    -- Tab
     ----------------------------------------------------------------
     local MainTab = Window:AddTab("Main", "house")
     Cora.Tabs.Main = MainTab
@@ -360,59 +359,47 @@ return function(Cora)
     -- Movement group
     ----------------------------------------------------------------
     local Movement = MainTab:AddLeftGroupbox("Movement", "footprints")
-
-    Movement:AddToggle("WalkSpeedEnabled", { Text = "Walk Speed", Default = false, Tooltip = "Override your walk speed." })
-    Movement:AddSlider("WalkSpeedValue", {
-        Text = "Walk Speed", Default = 16, Min = 16, Max = 25, Rounding = 0,
-        Disabled = true, Tooltip = "16-25 normally, up to 100 with Speed Bypass.",
-        DisabledTooltip = "Enable Walk Speed first.",
-    })
-    Movement:AddToggle("FastStop", { Text = "Fast Stop", Default = false, Tooltip = "No acceleration - you stop instantly (no slide)." })
-    Movement:AddToggle("SpeedBypass", { Text = "Speed Bypass", Default = false, Tooltip = "Doors anti-cheat bypass. Lets Walk Speed go up to 100." })
-    Movement:AddToggle("Fly", { Text = "Fly", Default = false, Tooltip = "Fly using the camera direction. Bindable below." })
+    Movement:AddToggle("WalkSpeedEnabled", { Text = "Walk Speed", Default = false })
+    Movement:AddSlider("WalkSpeedValue", { Text = "Walk Speed", Default = 16, Min = 16, Max = 25, Rounding = 0, Disabled = true })
+    Movement:AddToggle("FastStop", { Text = "Fast Stop", Default = false })
+    Movement:AddToggle("SpeedBypass", { Text = "Speed Bypass", Default = false })
+    Movement:AddToggle("Fly", { Text = "Fly", Default = false })
     Toggles.Fly:AddKeyPicker("FlyKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Fly", NoUI = false })
-    Movement:AddSlider("FlySpeed", { Text = "Fly Speed", Default = 16, Min = 16, Max = 100, Rounding = 0, Tooltip = "Speed used while flying." })
+    Movement:AddSlider("FlySpeed", { Text = "Fly Speed", Default = 16, Min = 16, Max = 100, Rounding = 0 })
 
     ----------------------------------------------------------------
     -- Prompt Exploits group
     ----------------------------------------------------------------
     local Prompts = MainTab:AddRightGroupbox("Prompt Exploits", "zap")
-
-    Prompts:AddToggle("PromptClip", { Text = "Prompt Clip", Default = false, Tooltip = "Interact with some prompts through walls." })
-    Prompts:AddToggle("PromptRange", { Text = "Prompt Range", Default = false, Tooltip = "Trigger prompts from further away." })
-    Prompts:AddSlider("PromptRangeMult", {
-        Text = "Prompt Range Multiplier", Default = 2, Min = 1.1, Max = 2, Rounding = 1,
-        Suffix = "x", Disabled = true,
-        Tooltip = "Multiplies prompt activation distance. ~2x is the Doors limit.",
-        DisabledTooltip = "Enable Prompt Range first.",
-    })
-    Prompts:AddToggle("InstantPrompt", { Text = "Instant Prompt", Default = false, Tooltip = "Removes hold time (key doors, levers, etc. trigger instantly)." })
-    Prompts:AddToggle("AutoPrompt", { Text = "Auto Prompt", Default = false, Tooltip = "Auto-presses prompts the moment a real popup is in range." })
+    Prompts:AddToggle("PromptClip", { Text = "Prompt Clip", Default = false })
+    Prompts:AddToggle("PromptRange", { Text = "Prompt Range", Default = false })
+    Prompts:AddSlider("PromptRangeMult", { Text = "Prompt Range Multiplier", Default = 2, Min = 1.1, Max = 2, Rounding = 1, Suffix = "x", Disabled = true })
+    Prompts:AddToggle("InstantPrompt", { Text = "Instant Prompt", Default = false })
+    Prompts:AddToggle("AutoPrompt", { Text = "Auto Prompt", Default = false })
     Toggles.AutoPrompt:AddKeyPicker("AutoPromptKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Auto Prompt", NoUI = false })
     Prompts:AddDropdown("AutoPromptIgnore", {
         Values  = { "Jeff Items", "Gold", "Drops", "Glitch Fragment",
                     "Paintings", "Light Source Items", "Skull Prompts", "Hiding Places", "Rifts" },
         Default = {}, Multi = true, Text = "Auto Prompt Ignore",
-        Tooltip = "Selected categories are never auto-triggered.",
     })
-    Prompts:AddSlider("AutoPromptInterval", { Text = "Auto Prompt Interval", Default = 0.05, Min = 0, Max = 0.15, Rounding = 2, Suffix = "s", Tooltip = "Delay between auto triggers. 0 = every frame." })
+    Prompts:AddSlider("AutoPromptInterval", { Text = "Auto Prompt Interval", Default = 0.05, Min = 0, Max = 0.15, Rounding = 2, Suffix = "s" })
 
     ----------------------------------------------------------------
     -- Useful group
     ----------------------------------------------------------------
     local Useful = MainTab:AddLeftGroupbox("Useful", "wrench")
-    Useful:AddToggle("AutoHeartbeat", { Text = "Auto Heartbeat Mini-Game", Default = false, Tooltip = "Automatically passes the Figure heartbeat mini-game." })
-    Useful:AddToggle("AutoSolveLibrary", { Text = "Auto Solve Library", Default = false, Tooltip = "Door 50: once every book is collected, opens the locked door when you're near it." })
-    Useful:AddToggle("AutoBreaker", { Text = "Auto Breaker Box", Default = false, Tooltip = "Automatically completes the breaker box (legit method)." })
+    Useful:AddToggle("AutoHeartbeat", { Text = "Auto Heartbeat Mini-Game", Default = false })
+    Useful:AddToggle("AutoSolveLibrary", { Text = "Auto Solve Library", Default = false })
+    Useful:AddToggle("AutoBreaker", { Text = "Auto Breaker Box", Default = false })
 
     ----------------------------------------------------------------
     -- Manual group (buttons)
     ----------------------------------------------------------------
     local Manual = MainTab:AddRightGroupbox("Manual", "hand")
-    Manual:AddButton({ Text = "Kill Self",  Func = killSelf,   Tooltip = "Sets your health to 0." })
-    Manual:AddButton({ Text = "Revive",     Func = reviveSelf, Tooltip = "Attempts to revive you (needs a revive available)." })
-    Manual:AddButton({ Text = "Play Again", Func = playAgain,  Tooltip = "Presses the Play Again button for you." })
-    Manual:AddButton({ Text = "Lobby",      Func = lobby,      Tooltip = "Presses the Lobby button to send you to the lobby." })
+    Manual:AddButton({ Text = "Kill Self",  Func = killSelf })
+    Manual:AddButton({ Text = "Revive",     Func = reviveSelf })
+    Manual:AddButton({ Text = "Play Again", Func = playAgain })
+    Manual:AddButton({ Text = "Lobby",      Func = lobby })
 
     ----------------------------------------------------------------
     -- Toggle effects (state-watcher: fires on first change, no re-toggle)
@@ -457,10 +444,7 @@ return function(Cora)
 
     watch(tval("InstantPrompt"), function(v) eachPrompt(function(p) applyInstant(p, v) end) end)
 
-    watch(tval("AutoPrompt"), function(v)
-        if v then rebuildInteractions() else table.clear(interactions) end
-        table.clear(fired)
-    end)
+    watch(tval("AutoPrompt"), function(v) table.clear(fired) end)
 
     watch(tval("AutoBreaker"), function(v)
         if not v then return end
@@ -482,18 +466,30 @@ return function(Cora)
                 if Toggles.PromptClip.Value    then pcall(applyClip, v, true) end
                 if Toggles.PromptRange.Value   then pcall(applyRange, v, true, Options.PromptRangeMult.Value) end
                 if Toggles.InstantPrompt.Value then pcall(applyInstant, v, true) end
-                if Toggles.AutoPrompt.Value    then table.insert(interactions, v) end
             end)
         elseif v.Name == "ElevatorBreaker" and Toggles.AutoBreaker.Value then
             breaker(v)
         end
     end)
     workspace.DescendantRemoving:Connect(function(v)
-        if not v:IsA("ProximityPrompt") then return end
-        fired[v] = nil
-        for i = #interactions, 1, -1 do
-            if interactions[i] == v then table.remove(interactions, i); break end
-        end
+        if v:IsA("ProximityPrompt") then fired[v] = nil end
+    end)
+
+    ----------------------------------------------------------------
+    -- Auto Prompt: fire when Doors actually shows a prompt for us
+    ----------------------------------------------------------------
+    PromptService.PromptShown:Connect(function(prompt)
+        if not Toggles.AutoPrompt.Value then return end
+        if LP:GetAttribute("Alive") == false then return end
+        if fired[prompt] then return end
+        if isIgnored(prompt) then return end
+        local wait = Options.AutoPromptInterval and Options.AutoPromptInterval.Value or 0
+        if wait > 0 then task.wait(wait) end
+        if not (Toggles.AutoPrompt.Value and prompt.Parent) then return end
+        if fired[prompt] then return end
+        fired[prompt] = true
+        tryEquipFor(prompt)
+        firePrompt(prompt)
     end)
 
     ----------------------------------------------------------------
@@ -542,33 +538,6 @@ return function(Cora)
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0, 1, 0) end
             if dir.Magnitude > 0 then dir = dir.Unit end
             flyBV.Velocity = dir * Options.FlySpeed.Value
-        end
-    end)
-
-    -- Auto Prompt: only fires prompts that are genuinely active (Enabled + in real
-    -- range), so it auto-presses real popups instead of consuming dead ones.
-    local autoTimer = 0
-    RunService.Heartbeat:Connect(function(dt)
-        if not Toggles.AutoPrompt.Value then return end
-        if LP:GetAttribute("Alive") == false then return end
-        autoTimer += dt
-        if autoTimer < Options.AutoPromptInterval.Value then return end
-        autoTimer = 0
-        local char = LP.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if not root then return end
-        for i = #interactions, 1, -1 do
-            local p = interactions[i]
-            if not p or not p.Parent then
-                table.remove(interactions, i)
-            elseif p.Enabled and not fired[p] and not isIgnored(p) then
-                local part = getPromptPart(p)
-                if part and (root.Position - part.Position).Magnitude <= p.MaxActivationDistance then
-                    tryEquipFor(p)
-                    firePrompt(p)
-                    fired[p] = true
-                end
-            end
         end
     end)
 
