@@ -1,8 +1,10 @@
 --[[
     Cora • TAB FILE: Anti  —  goes in /antitab.lua
     (This is a TAB file, NOT the bootstrap. The bootstrap lives in main.lua.)
-    Anti-entity / anti-mechanic toggles. Each toggle's state is mirrored into a
-    `state` table by a watcher loop, so the per-entity logic can read it live.
+    Anti-entity / anti-mechanic toggles, wired from the Supreme Hub reference.
+    Each toggle's state is mirrored into `state` by the watcher; swap-style ones
+    (Screech/Dread/Halt) and CanTouch ones fire an onChange handler, while the
+    damage-spoof ones (Eyes/Lookman/Figure Hearing) run in a per-frame loop.
 --]]
 
 return function(Cora)
@@ -20,85 +22,206 @@ return function(Cora)
     Cora.Tabs.Anti = AntiTab
 
     ----------------------------------------------------------------
-    -- State watcher: mirrors every toggle into state[idx] live
+    -- Game references
+    ----------------------------------------------------------------
+    local rf = ReplicatedStorage:FindFirstChild("EntityInfo")
+        or ReplicatedStorage:FindFirstChild("Bricks")
+        or ReplicatedStorage:FindFirstChild("RemotesFolder")
+    local ClientModules = ReplicatedStorage:FindFirstChild("ModulesClient")
+        or ReplicatedStorage:FindFirstChild("ClientModules")
+    local MotorReplication = rf and rf:FindFirstChild("MotorReplication")
+    local Crouch           = rf and rf:FindFirstChild("Crouch")
+
+    ----------------------------------------------------------------
+    -- State watcher (mirrors toggles into `state`, fires onChange)
     ----------------------------------------------------------------
     local state  = {}
     local _watch = {}
-    local function add(group, idx, text, default)
-        group:AddToggle(idx, { Text = text, Default = default or false })
-        table.insert(_watch, idx)
-        state[idx] = Toggles[idx] and Toggles[idx].Value or false
+    local function add(group, idx, text, onChange)
+        group:AddToggle(idx, { Text = text, Default = false })
+        state[idx] = false
+        table.insert(_watch, { idx = idx, last = false, fn = onChange })
     end
-    RunService.Heartbeat:Connect(function()
-        for _, idx in ipairs(_watch) do
-            local t = Toggles[idx]
-            if t then state[idx] = t.Value end
+
+    ----------------------------------------------------------------
+    -- Handlers
+    ----------------------------------------------------------------
+    -- Anti Screech: swap the real Screech remote with a dud so its damage fires
+    -- into nothing (Supreme's FakeScreech method).
+    local FakeScreech, screechOn
+    pcall(function()
+        if rf then
+            FakeScreech = Instance.new("RemoteEvent")
+            FakeScreech.Name = "Screech_"
+            FakeScreech.Parent = rf
         end
     end)
+    local function onScreech(v)
+        if not (rf and FakeScreech) then return end
+        if v then
+            pcall(function() if rf:FindFirstChild("Screech") then rf.Screech.Name = "Screech_" end end)
+            pcall(function() FakeScreech.Name = "Screech" end)
+            screechOn = true
+        elseif screechOn then
+            pcall(function()
+                local s = rf:FindFirstChild("Screech_")
+                if s and s ~= FakeScreech then s.Name = "Screech" end
+            end)
+            pcall(function() FakeScreech.Name = "Screech_" end)
+        end
+    end
+
+    -- Anti Dread: rename the Dread instance so its module stops finding it.
+    local function onDread(v)
+        pcall(function()
+            local d = LP:FindFirstChild("Dread", true) or LP:FindFirstChild("_Dread", true)
+            if d then d.Name = v and "_Dread" or "Dread" end
+        end)
+    end
+
+    -- Anti Halt: rename the Shade (Halt) client module.
+    local function onHalt(v)
+        pcall(function()
+            if not ClientModules then return end
+            local em = ClientModules:FindFirstChild("EntityModules")
+            if not em then return end
+            local s = em:FindFirstChild("Shade", true) or em:FindFirstChild("_Shade", true)
+            if s then s.Name = v and "_Shade" or "Shade" end
+        end)
+    end
+
+    -- CanTouch-based anti (Snare / Giggle / Dupe / Seek obstructions).
+    local function applyInstance(v)
+        pcall(function()
+            local n = v.Name
+            if n == "Snare" then
+                local hb = v:FindFirstChild("Hitbox")
+                if hb then hb.CanTouch = not state.AntiSnare end
+            elseif n == "GiggleCeiling" then
+                local hb = v:FindFirstChild("Hitbox")
+                if hb then hb.CanTouch = not state.AntiGiggle end
+            elseif n == "DoorFake" and v.Parent and v.Parent.Name == "SideroomDupe" then
+                local h = v:FindFirstChild("Hidden")
+                if h then h.CanTouch = not state.AntiDupe end
+            elseif n == "Seek_Arm" or n == "ChandelierObstruction" then
+                for _, i in ipairs(v:GetChildren()) do
+                    if i:IsA("BasePart") then i.CanTouch = not state.AntiSeekObstructions end
+                end
+            end
+        end)
+    end
+    local function rescanCanTouch()
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if not rooms then return end
+        for _, v in ipairs(rooms:GetDescendants()) do applyInstance(v) end
+    end
 
     ----------------------------------------------------------------
     -- Toggles
     ----------------------------------------------------------------
     local Entities = AntiTab:AddLeftGroupbox("Entities", "ghost")
-    add(Entities, "AntiScreech",       "Anti Screech")
-    add(Entities, "AntiEyes",          "Anti Eyes")
-    add(Entities, "AntiHalt",          "Anti Halt")
-    add(Entities, "AntiGlitch",        "Anti Glitch")
-    add(Entities, "AntiVoid",          "Anti Void")
-    add(Entities, "AntiDread",         "Anti Dread")
-    add(Entities, "AntiHide",          "Anti Hide")
-    add(Entities, "AntiFigureHearing", "Anti Figure Hearing")
-    add(Entities, "AntiLookman",       "Anti Lookman")
-    add(Entities, "AntiSeek",          "Anti Seek")
-    add(Entities, "AntiSnare",         "Anti Snare")
-    add(Entities, "AntiTimothy",       "Anti Timothy")
+    add(Entities, "AntiScreech",       "Anti Screech",        onScreech)
+    add(Entities, "AntiEyes",          "Anti Eyes")           -- loop below
+    add(Entities, "AntiHalt",          "Anti Halt",           onHalt)
+    add(Entities, "AntiDread",         "Anti Dread",          onDread)
+    add(Entities, "AntiHide",          "Anti Hide")           -- toggle only (no ref)
+    add(Entities, "AntiFigureHearing", "Anti Figure Hearing") -- loop below
+    add(Entities, "AntiLookman",       "Anti Lookman")        -- loop below
+    add(Entities, "AntiSnare",         "Anti Snare",          rescanCanTouch)
 
     local Misc = AntiTab:AddRightGroupbox("Misc", "ban")
-    add(Misc, "NoSpiderJumpscare", "No Spider Jumpscare Visual")
-    add(Misc, "AntiDupe",          "Anti Dupe")
-    add(Misc, "AntiJack",          "Anti Jack")
-    add(Misc, "AntiWindow",        "Anti Window")
-    add(Misc, "AntiGiggle",        "Anti Giggle")
-    add(Misc, "AntiGreed",         "Anti Greed")
-    add(Misc, "AntiA120",          "Anti A-120")
-    add(Misc, "AntiLagSpike",      "Anti Lag Spike")
+    add(Misc, "NoSpiderJumpscare",   "No Spider Jumpscare Visual") -- GUI hook below
+    add(Misc, "AntiDupe",            "Anti Dupe",                 rescanCanTouch)
+    add(Misc, "AntiJack",            "Anti Jack")                 -- toggle only (no ref)
+    add(Misc, "AntiGiggle",          "Anti Giggle",               rescanCanTouch)
+    add(Misc, "AntiSeekObstructions","Anti Seek Obstructions",    rescanCanTouch)
 
     ----------------------------------------------------------------
-    -- Helpers
+    -- Watcher loop
     ----------------------------------------------------------------
-    local function getRemotes()
-        return ReplicatedStorage:FindFirstChild("RemotesFolder")
-            or ReplicatedStorage:FindFirstChild("EntityInfo")
-            or ReplicatedStorage:FindFirstChild("Bricks")
-    end
+    RunService.Heartbeat:Connect(function()
+        for _, w in ipairs(_watch) do
+            local t = Toggles[w.idx]
+            if t then
+                local v = t.Value
+                state[w.idx] = v
+                if v ~= w.last then
+                    w.last = v
+                    if w.fn then pcall(w.fn, v) end
+                end
+            end
+        end
+    end)
 
     ----------------------------------------------------------------
-    -- Implemented behaviours
+    -- New instances get the current anti state applied
     ----------------------------------------------------------------
-    -- Anti Figure Hearing: keep telling the server you're moving silently.
-    -- (Same Crouch signal the god-mode port uses for figure-hearing.)
+    workspace.DescendantAdded:Connect(function(v)
+        task.spawn(function()
+            pcall(function()
+                local n = v.Name
+                if n == "Snare" or n == "GiggleCeiling" then
+                    local t = 0
+                    repeat task.wait(0.03) t += 0.03 until t > 2 or v:FindFirstChild("Hitbox")
+                elseif n == "DoorFake" then
+                    v:WaitForChild("Hidden", 5)
+                end
+                applyInstance(v)
+            end)
+        end)
+    end)
+
+    ----------------------------------------------------------------
+    -- Damage-spoof / continuous loops
+    ----------------------------------------------------------------
+    RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local char = LP.Character
+            if not char then return end
+            local hiding = char:GetAttribute("Hiding")
+
+            -- Anti Eyes: spoof rotation so Eyes/Lookman can't catch you moving
+            if state.AntiEyes and not hiding and MotorReplication then
+                if workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("Lookman") then
+                    if rf and rf.Name ~= "RemotesFolder" then
+                        MotorReplication:FireServer(0, -650, 0, false)
+                    else
+                        MotorReplication:FireServer(-650)
+                    end
+                end
+            end
+
+            -- Anti Lookman (backdoor)
+            if state.AntiLookman and not hiding and MotorReplication then
+                if workspace:FindFirstChild("BackdoorLookman") then
+                    MotorReplication:FireServer(-650)
+                end
+            end
+        end)
+    end)
+
+    -- Anti Figure Hearing: keep signalling silent movement
     local hearTimer = 0
     RunService.Heartbeat:Connect(function(dt)
         hearTimer += dt
         if hearTimer < 0.2 then return end
         hearTimer = 0
         pcall(function()
-            if not state.AntiFigureHearing then return end
-            local rf = getRemotes()
-            local crouch = rf and rf:FindFirstChild("Crouch")
-            if crouch then crouch:FireServer(true, true) end
+            if state.AntiFigureHearing and Crouch then
+                Crouch:FireServer(true, true)
+            end
         end)
     end)
 
-    -- No Spider Jumpscare Visual: hide the spider jumpscare GUI if it appears.
-    LP:WaitForChild("PlayerGui")
-    LP.PlayerGui.ChildAdded:Connect(function(gui)
-        pcall(function()
-            if not state.NoSpiderJumpscare then return end
-            local n = gui.Name:lower()
-            if n:find("spider") or n:find("timothy") then
-                gui.Enabled = false
-            end
+    -- No Spider Jumpscare Visual: hide the spider jumpscare GUI if it appears
+    pcall(function()
+        local pg = LP:WaitForChild("PlayerGui")
+        pg.ChildAdded:Connect(function(gui)
+            pcall(function()
+                if not state.NoSpiderJumpscare then return end
+                local n = gui.Name:lower()
+                if n:find("spider") or n:find("timothy") then gui.Enabled = false end
+            end)
         end)
     end)
 end
