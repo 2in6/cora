@@ -731,12 +731,21 @@ return function(Cora)
         end)
     end)
 
-    if hookmetamethod and getnamecallmethod then
+    -- Auto Heartbeat: hook __namecall ONCE per session. Re-running the script must
+    -- NOT add another hook - stacked hooks each call the previous one, and because
+    -- DOORS fires FireServer constantly, the chain recurses until the stack
+    -- overflows (the "Line 743" spam). The single persistent hook reads a global
+    -- flag that we keep in sync with the toggle, so reloads never re-hook.
+    watch(tval("AutoHeartbeat"), function(v)
+        if getgenv then getgenv().CoraAutoHB = v end
+    end)
+    if hookmetamethod and getnamecallmethod and getgenv and not getgenv().CoraHBHooked then
+        getgenv().CoraHBHooked = true
         local old
         old = hookmetamethod(game, "__namecall", function(self, ...)
-            if not (Library and Library.Unloaded)
-               and Toggles.AutoHeartbeat and Toggles.AutoHeartbeat.Value then
-                if getnamecallmethod() == "FireServer" and self.Name == "ClutchHeartbeat" then
+            if getgenv().CoraAutoHB and getnamecallmethod() == "FireServer" then
+                local ok, nm = pcall(function() return self.Name end)
+                if ok and nm == "ClutchHeartbeat" then
                     return old(self, true)
                 end
             end
