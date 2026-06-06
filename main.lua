@@ -122,6 +122,7 @@ return function(Cora)
     end
     loadTab("maintab.lua")
     loadTab("antitab.lua")
+    loadTab("floortab.lua")
     loadTab("visualstab.lua")
     loadTab("settings.lua")
 
