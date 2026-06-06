@@ -2,7 +2,7 @@
     Cora • TAB FILE: Visuals  —  goes in /visualstab.lua
     (This is a TAB file, NOT the bootstrap. The bootstrap lives in main.lua.)
     Overall (QoL): Fullbright, No Fog, No Camera Shaking, No Cutscenes.
-    Visual logic ported from public Doors scripts.
+    Toggle effects driven by a state-watcher loop (no re-toggle needed).
 --]]
 
 return function(Cora)
@@ -11,81 +11,45 @@ return function(Cora)
     local Toggles = Library.Toggles
     local Options = Library.Options
 
-    local Players          = game:GetService("Players")
-    local RunService       = game:GetService("RunService")
-    local Lighting         = game:GetService("Lighting")
-    local ReplicatedStorage= game:GetService("ReplicatedStorage")
-    local LP               = Players.LocalPlayer
+    local Players           = game:GetService("Players")
+    local RunService        = game:GetService("RunService")
+    local Lighting          = game:GetService("Lighting")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local LP                = Players.LocalPlayer
 
-    ----------------------------------------------------------------
-    -- Star icon (download -> asset, fallback to lucide "star")
-    ----------------------------------------------------------------
-    pcall(function()
-        if makefolder and not (isfolder and isfolder("CoraData")) then
-            makefolder("CoraData")
-        end
-    end)
-    local starIcon = "star"
-    pcall(function()
-        if writefile and getcustomasset then
-            local path = "CoraData/cora_visuals.png"
-            if not (isfile and isfile(path)) then
-                writefile(path, game:HttpGet(
-                    "https://i.ibb.co/rVHzTjq/star-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
-                ))
+    -- State-watcher (fires fn once at startup and on every change)
+    local _watch = {}
+    local function watch(idx, fn) table.insert(_watch, { idx = idx, last = nil, fn = fn }) end
+    RunService.Heartbeat:Connect(function()
+        for _, w in ipairs(_watch) do
+            local t = Toggles[w.idx]
+            if t then
+                local v = t.Value
+                if v ~= w.last then w.last = v; pcall(w.fn, v) end
             end
-            starIcon = getcustomasset(path)
         end
     end)
 
-    local VisualsTab = Window:AddTab("Visuals", starIcon)
+    local VisualsTab = Window:AddTab("Visuals", "eye")
     pcall(function() VisualsTab:SetDescription("ESP & Quality of Life") end)
     Cora.Tabs.Visuals = VisualsTab
 
-    ----------------------------------------------------------------
-    -- Overall group
-    ----------------------------------------------------------------
-    local Overall = VisualsTab:AddLeftGroupbox("Overall", "eye")
+    local Overall = VisualsTab:AddLeftGroupbox("Overall", "sun")
+    Overall:AddToggle("FullBright",  { Text = "Fullbright", Default = false, Tooltip = "See clearly everywhere - dark rooms become bright." })
+    Overall:AddToggle("NoFog",       { Text = "No Fog", Default = false, Tooltip = "Disables all fog." })
+    Overall:AddToggle("NoCamShake",  { Text = "No Camera Shaking", Default = false, Tooltip = "Removes camera shake." })
+    Overall:AddToggle("NoCutscenes", { Text = "No Cutscenes", Default = false, Tooltip = "Disables cutscenes." })
 
-    Overall:AddToggle("FullBright", {
-        Text    = "Fullbright",
-        Default = false,
-        Tooltip = "See clearly everywhere - dark rooms become bright.",
-    })
-
-    Overall:AddToggle("NoFog", {
-        Text    = "No Fog",
-        Default = false,
-        Tooltip = "Disables all fog.",
-    })
-
-    Overall:AddToggle("NoCamShake", {
-        Text    = "No Camera Shaking",
-        Default = false,
-        Tooltip = "Removes camera shake.",
-    })
-
-    Overall:AddToggle("NoCutscenes", {
-        Text    = "No Cutscenes",
-        Default = false,
-        Tooltip = "Disables cutscenes.",
-    })
-
-    ----------------------------------------------------------------
-    -- Logic (Doors-specific; everything guarded for lobby/other games)
-    ----------------------------------------------------------------
     local WHITE = Color3.new(1, 1, 1)
 
-    -- Fullbright: store defaults on enable, enforce in loop, restore on disable
+    -- Fullbright: store defaults on enable, restore on disable (enforced in loop)
     local fbDefaults
-    Toggles.FullBright:OnChanged(function()
-        if Toggles.FullBright.Value then
+    watch("FullBright", function(on)
+        if on then
             if not fbDefaults then
                 fbDefaults = {
-                    Ambient        = Lighting.Ambient,
-                    OutdoorAmbient = Lighting.OutdoorAmbient,
-                    GlobalShadows  = Lighting.GlobalShadows,
-                    Brightness     = Lighting.Brightness,
+                    Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+                    GlobalShadows = Lighting.GlobalShadows, Brightness = Lighting.Brightness,
                 }
             end
         else
@@ -110,8 +74,8 @@ return function(Cora)
 
     -- No Fog: store FogEnd on enable, restore on disable
     local fogDefault
-    Toggles.NoFog:OnChanged(function()
-        if Toggles.NoFog.Value then
+    watch("NoFog", function(on)
+        if on then
             if not fogDefault then fogDefault = Lighting.FogEnd end
         else
             if fogDefault then Lighting.FogEnd = fogDefault; fogDefault = nil end
@@ -143,21 +107,20 @@ return function(Cora)
         local mg = init and init:FindFirstChild("Main_Game")
         return mg and mg:FindFirstChild("RemoteListener")
     end
-    local function applyCutscenes()
+    local function applyCutscenes(on)
         local rl = getRemoteListener()
         if not rl then return end
         local cs = rl:FindFirstChild("Cutscenes") or rl:FindFirstChild("Cutscenes_")
         if not cs then return end
-        cs.Name = Toggles.NoCutscenes.Value and "Cutscenes_" or "Cutscenes"
+        cs.Name = on and "Cutscenes_" or "Cutscenes"
     end
-    Toggles.NoCutscenes:OnChanged(applyCutscenes)
+    watch("NoCutscenes", function(on) applyCutscenes(on) end)
 
-    -- Re-apply module-dependent toggles after respawn (Main_Game rebuilds)
     LP.CharacterAdded:Connect(function()
         task.wait(1.5)
         RequiredMainGame = nil
         resolveMainGame()
-        if Toggles.NoCutscenes.Value then pcall(applyCutscenes) end
+        if Toggles.NoCutscenes and Toggles.NoCutscenes.Value then pcall(applyCutscenes, true) end
     end)
 
     -- Enforcement loop
@@ -175,14 +138,11 @@ return function(Cora)
                         if room:GetAttribute("CoraOldAmbient") == nil then
                             room:SetAttribute("CoraOldAmbient", room:GetAttribute("Ambient"))
                         end
-                        if room:GetAttribute("Ambient") ~= WHITE then
-                            room:SetAttribute("Ambient", WHITE)
-                        end
+                        if room:GetAttribute("Ambient") ~= WHITE then room:SetAttribute("Ambient", WHITE) end
                     end
                 end
             end)
         end
-
         if Toggles.NoFog.Value then
             pcall(function()
                 if Lighting.FogEnd < 100000 then Lighting.FogEnd = 100000 end
@@ -191,7 +151,6 @@ return function(Cora)
                 end
             end)
         end
-
         if Toggles.NoCamShake.Value and RequiredMainGame then
             pcall(function() RequiredMainGame.csgo = CFrame.new(0, 0, 0) end)
         end
