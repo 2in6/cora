@@ -46,6 +46,7 @@ return function(Cora)
     local flyEnabled = false
     local flyBV
     local CollisionClone
+    local godApplied = false
 
     ----------------------------------------------------------------
     -- Fly helpers
@@ -95,83 +96,147 @@ return function(Cora)
         humanoid  = char:WaitForChild("Humanoid", 10)
         hrp       = char:WaitForChild("HumanoidRootPart", 10)
         CollisionClone = nil
+        godApplied = false
         if flyEnabled then startFly() end
     end
     LP.CharacterAdded:Connect(onCharacter)
     if LP.Character then task.spawn(onCharacter, LP.Character) end
 
     ----------------------------------------------------------------
-    -- Manual action helpers
+    -- Manual action helpers (Doors remotes, fired ONCE each)
     ----------------------------------------------------------------
+    local function fireOnce(name, ...)
+        local rf = getRemotes()
+        local r = rf and rf:FindFirstChild(name)
+        if not r then return false end
+        local args = { ... }
+        pcall(function()
+            if r:IsA("RemoteEvent") then r:FireServer(table.unpack(args))
+            elseif r:IsA("RemoteFunction") then r:InvokeServer(table.unpack(args)) end
+        end)
+        return true
+    end
+
     local function killSelf()
+        -- Doors handles death via its own systems; replicatesignal(Kill) is cleanest,
+        -- drowning is the fallback, Humanoid.Health a last resort.
+        if replicatesignal and LP:FindFirstChild("Kill") then
+            pcall(function() replicatesignal(LP.Kill) end)
+            return
+        end
+        local rf = getRemotes()
+        if rf and rf:FindFirstChild("Underwater") then
+            task.spawn(function()
+                for _ = 1, 30 do
+                    if LP:GetAttribute("Alive") == false then break end
+                    pcall(function() rf.Underwater:FireServer(true) end)
+                    task.wait(0.1)
+                end
+                pcall(function() if rf:FindFirstChild("Underwater") then rf.Underwater:FireServer(false) end end)
+            end)
+            return
+        end
         pcall(function()
             local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.Health = 0 end
         end)
     end
 
-    local function reviveSelf()
-        pcall(function()
-            local rf = getRemotes()
-            if not rf then return end
-            for _, n in ipairs({ "Revive", "ReviveCharacter", "RevivePlayer", "ReviveSelf" }) do
-                local r = rf:FindFirstChild(n)
-                if r then
-                    if r:IsA("RemoteEvent") then r:FireServer(LP)
-                    elseif r:IsA("RemoteFunction") then r:InvokeServer(LP) end
-                    return
-                end
+    local function reviveSelf() fireOnce("Revive") end
+    local function playAgain() fireOnce("PlayAgain") end
+    local function lobby()     fireOnce("Lobby") end
+
+    ----------------------------------------------------------------
+    -- God Mode (ported from Supreme Hub: displaces/shrinks the Collision hitbox)
+    ----------------------------------------------------------------
+    local EntityNames = {
+        RushMoving = true, AmbushMoving = true, A60 = true, A120 = true,
+        GlitchRush = true, GlitchAmbush = true, Eyes = true, Lookman = true,
+        BackdoorRush = true, BackdoorLookman = true, JeffTheKiller = true,
+        Snare = true, FigureRig = true, FigureRagdoll = true, GrumbleRig = true,
+        Groundskeeper = true, MandrakeLive = true, LiveEntityBramble = true,
+    }
+    local function partOf(v)
+        if v:IsA("BasePart") then return v end
+        if v:IsA("Model") then return v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart") end
+        return nil
+    end
+    local function entityNear(range)
+        local char = LP.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return false end
+        for _, v in ipairs(workspace:GetChildren()) do
+            if EntityNames[v.Name] then
+                local part = partOf(v)
+                if part and (root.Position - part.Position).Magnitude <= range then return true end
             end
-        end)
-    end
-
-    -- Trigger a GUI button's handlers directly (no real mouse click needed)
-    local function fireButton(b)
-        local sigs = { "MouseButton1Click", "Activated", "MouseButton1Down", "MouseButton1Up" }
-        if getconnections then
-            for _, s in ipairs(sigs) do
-                pcall(function()
-                    for _, c in ipairs(getconnections(b[s])) do
-                        if c.Fire then c:Fire() elseif c.Function then c.Function() end
-                    end
-                end)
-            end
         end
-        if firesignal then
-            for _, s in ipairs(sigs) do pcall(function() firesignal(b[s]) end) end
-        end
-    end
-
-    -- Build a searchable label from the button text, its name, and child label text
-    local function buttonLabel(b)
-        local s = (((b:IsA("TextButton")) and b.Text) or "") .. " " .. b.Name
-        for _, d in ipairs(b:GetDescendants()) do
-            if d:IsA("TextLabel") or d:IsA("TextButton") then s = s .. " " .. d.Text end
-        end
-        return s:lower()
-    end
-
-    local function clickButton(matches)
-        local pg = LP:FindFirstChild("PlayerGui")
-        if not pg then return false end
-        local hit = false
-        for _, b in ipairs(pg:GetDescendants()) do
-            if b:IsA("GuiButton") then
-                local label = buttonLabel(b)
-                for _, m in ipairs(matches) do
-                    if label:find(m) then fireButton(b); hit = true; break end
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if rooms then
+            for _, v in ipairs(rooms:GetDescendants()) do
+                if EntityNames[v.Name] then
+                    local part = partOf(v)
+                    if part and (root.Position - part.Position).Magnitude <= range then return true end
                 end
             end
         end
-        return hit
+        return false
     end
-    local function playAgain()
-        local ok = clickButton({ "play again", "playagain", "play_again", "again", "retry", "rejoin", "restart" })
-        if not ok then
-            pcall(function() TeleportService:Teleport(game.PlaceId, LP) end) -- fallback: rejoin
+
+    local function godEnable()
+        local char = LP.Character
+        if not char then return end
+        local rf = getRemotes()
+        if rf and rf.Name ~= "RemotesFolder" then
+            local col = char:FindFirstChild("Collision")
+            if col then col.Position -= Vector3.new(0, 4, 0) end
+        else
+            local cp = char:FindFirstChild("CollisionPart")
+            if cp then pcall(function() char:PivotTo(cp.CFrame * CFrame.new(0, -2, 0)) end) end
         end
     end
-    local function lobby() clickButton({ "lobby", "menu", "leave", "exit", "main menu" }) end
+
+    local function godDisable()
+        local char = LP.Character
+        if not char then return end
+        local rf = getRemotes()
+        if rf and rf.Name == "RemotesFolder" then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local col = char:FindFirstChild("Collision")
+            local lt  = char:FindFirstChild("LowerTorso")
+            local cp  = char:FindFirstChild("CollisionPart")
+            if hum then hum.HipHeight = 2.4 end
+            if col then
+                col.Size = Vector3.new(5.5, 3, 3)
+                local cc = col:FindFirstChild("CollisionCrouch")
+                if cc then cc.Size = Vector3.new(5.5, 3, 3) end
+            end
+            if lt and lt:FindFirstChild("Root") then lt.Root.C1 = CFrame.new(0, 0, 0) end
+            if cp then pcall(function() char:PivotTo(cp.CFrame * CFrame.new(0, 2, 0)) end) end
+        else
+            local col = char:FindFirstChild("Collision")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if col and root then col.Position = root.Position end
+        end
+    end
+
+    local function godEnforce()
+        local char = LP.Character
+        if not char then return end
+        local rf = getRemotes()
+        if not (rf and rf.Name == "RemotesFolder") then return end
+        local crouch = rf:FindFirstChild("Crouch")
+        if crouch then pcall(function() crouch:FireServer(true) end) end -- figure-hearing, god needs it
+        local lt  = char:FindFirstChild("LowerTorso")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local col = char:FindFirstChild("Collision")
+        if lt and lt:FindFirstChild("Root") and lt.Root.C1 ~= CFrame.new(0, -2.3, 0) then lt.Root.C1 = CFrame.new(0, -2.3, 0) end
+        if hum and hum.HipHeight ~= 0.22 then hum.HipHeight = 0.22 end
+        if col and col.Size ~= Vector3.new(1, 1, 4) then col.Size = Vector3.new(1, 1, 4) end
+        if col and col:FindFirstChild("CollisionCrouch") and col.CollisionCrouch.Size ~= Vector3.new(1, 1, 4) then
+            col.CollisionCrouch.Size = Vector3.new(1, 1, 4)
+        end
+    end
 
     ----------------------------------------------------------------
     -- Prompt helpers
@@ -432,6 +497,11 @@ return function(Cora)
     Manual:AddButton({ Text = "Play Again", Func = playAgain })
     Manual:AddButton({ Text = "Lobby",      Func = lobby })
 
+    local God = MainTab:AddRightGroupbox("God Mode", "shield")
+    God:AddToggle("GodEnabled", { Text = "Enabled", Default = false })
+    Toggles.GodEnabled:AddKeyPicker("GodKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "God Mode", NoUI = false })
+    God:AddSlider("GodEntityRange", { Text = "Entity Detection Range", Default = 100, Min = 50, Max = 500, Rounding = 0 })
+
     ----------------------------------------------------------------
     -- Toggle effects (state-watcher)
     ----------------------------------------------------------------
@@ -564,6 +634,34 @@ return function(Cora)
                 humanoid.WalkSpeed = Options.WalkSpeedValue.Value
             end
         end
+    end)
+
+    -- God Mode: while Enabled, god mode applies only when an entity is within the
+    -- Entity Detection Range (so you're not god 24/7, which can lagback).
+    local godNear = false
+    local godTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        local want = false
+        if Toggles.GodEnabled.Value then
+            godTimer += dt
+            if godTimer >= 0.35 then
+                godTimer = 0
+                godNear = entityNear(Options.GodEntityRange.Value)
+            end
+            want = godNear
+        else
+            godNear = false
+        end
+
+        if want and not godApplied then
+            godApplied = true
+            godEnable()
+        elseif not want and godApplied then
+            godApplied = false
+            godDisable()
+        end
+
+        if godApplied then godEnforce() end
     end)
 
     task.spawn(function()
