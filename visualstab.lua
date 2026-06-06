@@ -289,12 +289,20 @@ return function(Cora)
         local rooms = workspace:FindFirstChild("CurrentRooms")
         if rooms then
             if Toggles.DoorESP.Value then
+                -- only the door of the room you're currently in (the one ahead),
+                -- so doors you've already passed drop out of `desired` and get
+                -- unloaded on the very next scan instead of lingering. The whole
+                -- Door MODEL is the target, so the entire door is highlighted.
+                local cur = tonumber(LP:GetAttribute("CurrentRoom"))
                 for _, room in ipairs(rooms:GetChildren()) do
                     local door = room:FindFirstChild("Door")
-                    local doorPart = door and door:FindFirstChild("Door")
-                    if doorPart then
-                        local id = (door:GetAttribute("RoomID")) or room.Name
-                        desired[doorPart] = { cat = "Door", text = "Door [" .. tostring(id) .. "]" }
+                    if door then
+                        local rid = tonumber(room.Name) or tonumber(door:GetAttribute("RoomID"))
+                        local show = (not cur) or (rid and rid >= cur and rid <= cur + 1)
+                        if show then
+                            local id = door:GetAttribute("RoomID") or room.Name
+                            desired[door] = { cat = "Door", text = "Door [" .. tostring(id) .. "]" }
+                        end
                     end
                 end
             end
@@ -332,7 +340,7 @@ return function(Cora)
     local scanTimer = 0
     RunService.Heartbeat:Connect(function(dt)
         scanTimer += dt
-        if scanTimer < 0.4 then return end
+        if scanTimer < 0.2 then return end
         scanTimer = 0
         pcall(function()
             local anyOn = Toggles.PlayerESP.Value or Toggles.DoorESP.Value or Toggles.ItemESP.Value
