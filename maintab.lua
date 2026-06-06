@@ -497,7 +497,7 @@ return function(Cora)
     Manual:AddButton({ Text = "Play Again", Func = playAgain })
     Manual:AddButton({ Text = "Lobby",      Func = lobby })
 
-    local God = MainTab:AddRightGroupbox("God Mode", "shield")
+    local God = MainTab:AddLeftGroupbox("God Mode", "shield")
     God:AddToggle("GodEnabled", { Text = "Enabled", Default = false })
     Toggles.GodEnabled:AddKeyPicker("GodKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "God Mode", NoUI = false })
     God:AddSlider("GodEntityRange", { Text = "Entity Detection Range", Default = 100, Min = 50, Max = 500, Rounding = 0 })
