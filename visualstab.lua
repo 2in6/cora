@@ -35,10 +35,10 @@ return function(Cora)
     Cora.Tabs.Visuals = VisualsTab
 
     local Overall = VisualsTab:AddLeftGroupbox("Overall", "sun")
-    Overall:AddToggle("FullBright",  { Text = "Fullbright", Default = false, Tooltip = "See clearly everywhere - dark rooms become bright." })
-    Overall:AddToggle("NoFog",       { Text = "No Fog", Default = false, Tooltip = "Disables all fog." })
-    Overall:AddToggle("NoCamShake",  { Text = "No Camera Shaking", Default = false, Tooltip = "Removes camera shake." })
-    Overall:AddToggle("NoCutscenes", { Text = "No Cutscenes", Default = false, Tooltip = "Disables cutscenes." })
+    Overall:AddToggle("FullBright",  { Text = "Fullbright", Default = false })
+    Overall:AddToggle("NoFog",       { Text = "No Fog", Default = false })
+    Overall:AddToggle("NoCamShake",  { Text = "No Camera Shaking", Default = false })
+    Overall:AddToggle("NoCutscenes", { Text = "No Cutscenes", Default = false })
 
     local WHITE = Color3.new(1, 1, 1)
 
