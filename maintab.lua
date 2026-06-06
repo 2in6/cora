@@ -1,10 +1,9 @@
 --[[
     Cora • TAB FILE: Main  —  goes in /maintab.lua
     (This is a TAB file, NOT the bootstrap. The bootstrap lives in main.lua.)
-    Movement: Walk Speed, Fast Stop, Speed Bypass, Fly.
-    Prompt Exploits: Clip, Range, Instant, Auto Prompt.
-    Useful: Auto Heartbeat, Auto Solve Library, Auto Breaker.
-    Logic lives in toggle Callbacks (fire reliably on first click) + runtime loops.
+    Movement / Prompt Exploits / Useful / Manual.
+    Toggle effects are driven by a state-watcher loop (diffs .Value each frame),
+    so they apply the moment a toggle changes - no re-toggle needed.
 --]]
 
 return function(Cora)
@@ -20,11 +19,27 @@ return function(Cora)
     local LP               = Players.LocalPlayer
 
     ----------------------------------------------------------------
+    -- State-watcher: runs fn(value) once at startup and on every change
+    ----------------------------------------------------------------
+    local _watch = {}
+    local function watch(getter, fn) table.insert(_watch, { get = getter, last = nil, fn = fn }) end
+    RunService.Heartbeat:Connect(function()
+        for _, w in ipairs(_watch) do
+            local ok, v = pcall(w.get)
+            if ok and v ~= w.last then
+                w.last = v
+                pcall(w.fn, v)
+            end
+        end
+    end)
+    local function tval(idx) return function() return Toggles[idx] and Toggles[idx].Value end end
+    local function oval(idx) return function() return Options[idx] and Options[idx].Value end end
+
+    ----------------------------------------------------------------
     -- State
     ----------------------------------------------------------------
     local character, humanoid, hrp
     local DEFAULT_SPEED = 16
-
     local flyEnabled = false
     local flyBV
     local CollisionClone
@@ -35,7 +50,6 @@ return function(Cora)
     local function stopFly()
         if flyBV then flyBV:Destroy(); flyBV = nil end
     end
-
     local function startFly()
         if not hrp then return end
         stopFly()
@@ -48,7 +62,7 @@ return function(Cora)
     end
 
     ----------------------------------------------------------------
-    -- Doors remotes + collision clone (speed bypass)
+    -- Doors remotes + collision clone
     ----------------------------------------------------------------
     local function getRemotes()
         return ReplicatedStorage:FindFirstChild("EntityInfo")
@@ -84,6 +98,54 @@ return function(Cora)
     if LP.Character then task.spawn(onCharacter, LP.Character) end
 
     ----------------------------------------------------------------
+    -- Manual action helpers
+    ----------------------------------------------------------------
+    local function killSelf()
+        pcall(function()
+            local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.Health = 0 end
+        end)
+    end
+
+    local function reviveSelf()
+        pcall(function()
+            local rf = getRemotes()
+            if not rf then return end
+            for _, n in ipairs({ "Revive", "ReviveCharacter", "RevivePlayer", "ReviveSelf" }) do
+                local r = rf:FindFirstChild(n)
+                if r then
+                    if r:IsA("RemoteEvent") then r:FireServer(LP)
+                    elseif r:IsA("RemoteFunction") then r:InvokeServer(LP) end
+                    return
+                end
+            end
+        end)
+    end
+
+    local function clickButton(matches)
+        local pg = LP:FindFirstChild("PlayerGui")
+        if not pg then return false end
+        for _, b in ipairs(pg:GetDescendants()) do
+            if b:IsA("GuiButton") then
+                local label = (((b:IsA("TextButton")) and b.Text) or "") .. " " .. b.Name
+                label = label:lower()
+                for _, m in ipairs(matches) do
+                    if label:find(m) then
+                        if firesignal then
+                            pcall(function() firesignal(b.MouseButton1Click) end)
+                            pcall(function() firesignal(b.Activated) end)
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+        return false
+    end
+    local function playAgain() clickButton({ "play again", "playagain", "retry" }) end
+    local function lobby()     clickButton({ "lobby" }) end
+
+    ----------------------------------------------------------------
     -- Prompt helpers
     ----------------------------------------------------------------
     local fireprompt = fireproximityprompt -- executor fn (may be nil)
@@ -113,7 +175,6 @@ return function(Cora)
             if o ~= nil then p.RequiresLineOfSight = o; p:SetAttribute("CoraClip", nil) end
         end
     end
-
     local function applyRange(p, on, mult)
         if on then
             if p:GetAttribute("CoraRange") == nil then p:SetAttribute("CoraRange", p.MaxActivationDistance) end
@@ -123,7 +184,6 @@ return function(Cora)
             if o ~= nil then p.MaxActivationDistance = o; p:SetAttribute("CoraRange", nil) end
         end
     end
-
     local function applyInstant(p, on)
         if on then
             if p:GetAttribute("CoraDur") == nil then p:SetAttribute("CoraDur", p.HoldDuration) end
@@ -133,7 +193,6 @@ return function(Cora)
             if o ~= nil then p.HoldDuration = o; p:SetAttribute("CoraDur", nil) end
         end
     end
-
     local function eachPrompt(fn)
         for _, v in ipairs(workspace:GetDescendants()) do
             if v:IsA("ProximityPrompt") then pcall(fn, v) end
@@ -151,7 +210,7 @@ return function(Cora)
         Double_Bed = true, Toolshed = true, RetroWardrobe = true, CircularVent = true,
     }
     local function isIgnored(p)
-        if p.Name == "RevivePrompt" then return true end -- never auto-revive
+        if p.Name == "RevivePrompt" then return true end
         local ig = Options.AutoPromptIgnore and Options.AutoPromptIgnore.Value
         if type(ig) ~= "table" then return false end
         local par = p.Parent
@@ -210,7 +269,7 @@ return function(Cora)
     end
 
     ----------------------------------------------------------------
-    -- Useful helpers (Doors-specific)
+    -- Useful helpers
     ----------------------------------------------------------------
     local function getLibraryCode()
         local gd    = ReplicatedStorage:FindFirstChild("GameData")
@@ -292,25 +351,9 @@ return function(Cora)
     end
 
     ----------------------------------------------------------------
-    -- Icon + tab
+    -- Tab (lucide icon now that the library renders them)
     ----------------------------------------------------------------
-    pcall(function()
-        if makefolder and not (isfolder and isfolder("CoraData")) then makefolder("CoraData") end
-    end)
-    local homeIcon = "house"
-    pcall(function()
-        if writefile and getcustomasset then
-            local path = "CoraData/cora_main.png"
-            if not (isfile and isfile(path)) then
-                writefile(path, game:HttpGet(
-                    "https://i.ibb.co/hRzVz0b9/home-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
-                ))
-            end
-            homeIcon = getcustomasset(path)
-        end
-    end)
-
-    local MainTab = Window:AddTab("Main", homeIcon)
+    local MainTab = Window:AddTab("Main", "house")
     Cora.Tabs.Main = MainTab
 
     ----------------------------------------------------------------
@@ -318,158 +361,116 @@ return function(Cora)
     ----------------------------------------------------------------
     local Movement = MainTab:AddLeftGroupbox("Movement", "footprints")
 
-    Movement:AddToggle("WalkSpeedEnabled", {
-        Text = "Walk Speed", Default = false, Tooltip = "Override your walk speed.",
-        Callback = function(v)
-            pcall(function() Options.WalkSpeedValue:SetDisabled(not v) end)
-            if not v and humanoid then humanoid.WalkSpeed = DEFAULT_SPEED end
-        end,
-    })
+    Movement:AddToggle("WalkSpeedEnabled", { Text = "Walk Speed", Default = false, Tooltip = "Override your walk speed." })
     Movement:AddSlider("WalkSpeedValue", {
         Text = "Walk Speed", Default = 16, Min = 16, Max = 25, Rounding = 0,
         Disabled = true, Tooltip = "16-25 normally, up to 100 with Speed Bypass.",
         DisabledTooltip = "Enable Walk Speed first.",
     })
-
-    Movement:AddToggle("FastStop", {
-        Text = "Fast Stop", Default = false,
-        Tooltip = "No acceleration - you stop instantly (no slide).",
-    })
-
-    Movement:AddToggle("SpeedBypass", {
-        Text = "Speed Bypass", Default = false,
-        Tooltip = "Doors anti-cheat bypass. Lets Walk Speed go up to 100.",
-        Callback = function(v)
-            pcall(function()
-                if Options.WalkSpeedValue.SetMax then
-                    Options.WalkSpeedValue:SetMax(v and 100 or 25)
-                else
-                    Options.WalkSpeedValue.Max = v and 100 or 25
-                end
-            end)
-            if not v then
-                if Options.WalkSpeedValue.Value > 25 then
-                    pcall(function() Options.WalkSpeedValue:SetValue(25) end)
-                end
-                pcall(function()
-                    local rf = getRemotes()
-                    local crouch = rf and rf:FindFirstChild("Crouch")
-                    if crouch then crouch:FireServer(false) end
-                end)
-                pcall(function()
-                    if CollisionClone and CollisionClone.Parent then CollisionClone.Massless = false end
-                end)
-            end
-        end,
-    })
-
-    Movement:AddToggle("Fly", {
-        Text = "Fly", Default = false,
-        Tooltip = "Fly using the camera direction. Bindable below.",
-        Callback = function(v)
-            flyEnabled = v
-            if v then startFly() else stopFly() end
-        end,
-    })
-    Toggles.Fly:AddKeyPicker("FlyKeybind", {
-        Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Fly", NoUI = false,
-    })
-
-    Movement:AddSlider("FlySpeed", {
-        Text = "Fly Speed", Default = 16, Min = 16, Max = 100, Rounding = 0,
-        Tooltip = "Speed used while flying.",
-    })
+    Movement:AddToggle("FastStop", { Text = "Fast Stop", Default = false, Tooltip = "No acceleration - you stop instantly (no slide)." })
+    Movement:AddToggle("SpeedBypass", { Text = "Speed Bypass", Default = false, Tooltip = "Doors anti-cheat bypass. Lets Walk Speed go up to 100." })
+    Movement:AddToggle("Fly", { Text = "Fly", Default = false, Tooltip = "Fly using the camera direction. Bindable below." })
+    Toggles.Fly:AddKeyPicker("FlyKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Fly", NoUI = false })
+    Movement:AddSlider("FlySpeed", { Text = "Fly Speed", Default = 16, Min = 16, Max = 100, Rounding = 0, Tooltip = "Speed used while flying." })
 
     ----------------------------------------------------------------
     -- Prompt Exploits group
     ----------------------------------------------------------------
     local Prompts = MainTab:AddRightGroupbox("Prompt Exploits", "zap")
 
-    Prompts:AddToggle("PromptClip", {
-        Text = "Prompt Clip", Default = false,
-        Tooltip = "Interact with some prompts through walls.",
-        Callback = function(v) eachPrompt(function(p) applyClip(p, v) end) end,
-    })
-
-    Prompts:AddToggle("PromptRange", {
-        Text = "Prompt Range", Default = false,
-        Tooltip = "Trigger prompts from further away.",
-        Callback = function(v)
-            pcall(function() Options.PromptRangeMult:SetDisabled(not v) end)
-            eachPrompt(function(p) applyRange(p, v, Options.PromptRangeMult.Value) end)
-        end,
-    })
-
+    Prompts:AddToggle("PromptClip", { Text = "Prompt Clip", Default = false, Tooltip = "Interact with some prompts through walls." })
+    Prompts:AddToggle("PromptRange", { Text = "Prompt Range", Default = false, Tooltip = "Trigger prompts from further away." })
     Prompts:AddSlider("PromptRangeMult", {
         Text = "Prompt Range Multiplier", Default = 2, Min = 1.1, Max = 2, Rounding = 1,
         Suffix = "x", Disabled = true,
         Tooltip = "Multiplies prompt activation distance. ~2x is the Doors limit.",
         DisabledTooltip = "Enable Prompt Range first.",
-        Callback = function(v)
-            if Toggles.PromptRange and Toggles.PromptRange.Value then
-                eachPrompt(function(p) applyRange(p, true, v) end)
-            end
-        end,
     })
-
-    Prompts:AddToggle("InstantPrompt", {
-        Text = "Instant Prompt", Default = false,
-        Tooltip = "Removes hold time (key doors, levers, etc. trigger instantly).",
-        Callback = function(v) eachPrompt(function(p) applyInstant(p, v) end) end,
-    })
-
-    Prompts:AddToggle("AutoPrompt", {
-        Text = "Auto Prompt", Default = false,
-        Tooltip = "Automatically triggers nearby prompts (chests, doors, pickups).",
-        Callback = function(v)
-            if v then rebuildInteractions() else table.clear(interactions) end
-            table.clear(fired)
-        end,
-    })
-    Toggles.AutoPrompt:AddKeyPicker("AutoPromptKeybind", {
-        Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Auto Prompt", NoUI = false,
-    })
-
+    Prompts:AddToggle("InstantPrompt", { Text = "Instant Prompt", Default = false, Tooltip = "Removes hold time (key doors, levers, etc. trigger instantly)." })
+    Prompts:AddToggle("AutoPrompt", { Text = "Auto Prompt", Default = false, Tooltip = "Auto-presses prompts the moment a real popup is in range." })
+    Toggles.AutoPrompt:AddKeyPicker("AutoPromptKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Auto Prompt", NoUI = false })
     Prompts:AddDropdown("AutoPromptIgnore", {
         Values  = { "Jeff Items", "Gold", "Drops", "Glitch Fragment",
                     "Paintings", "Light Source Items", "Skull Prompts", "Hiding Places", "Rifts" },
         Default = {}, Multi = true, Text = "Auto Prompt Ignore",
         Tooltip = "Selected categories are never auto-triggered.",
     })
-
-    Prompts:AddSlider("AutoPromptInterval", {
-        Text = "Auto Prompt Interval", Default = 0.05, Min = 0, Max = 0.15, Rounding = 2,
-        Suffix = "s", Tooltip = "Delay between auto triggers. 0 = every frame.",
-    })
+    Prompts:AddSlider("AutoPromptInterval", { Text = "Auto Prompt Interval", Default = 0.05, Min = 0, Max = 0.15, Rounding = 2, Suffix = "s", Tooltip = "Delay between auto triggers. 0 = every frame." })
 
     ----------------------------------------------------------------
     -- Useful group
     ----------------------------------------------------------------
     local Useful = MainTab:AddLeftGroupbox("Useful", "wrench")
+    Useful:AddToggle("AutoHeartbeat", { Text = "Auto Heartbeat Mini-Game", Default = false, Tooltip = "Automatically passes the Figure heartbeat mini-game." })
+    Useful:AddToggle("AutoSolveLibrary", { Text = "Auto Solve Library", Default = false, Tooltip = "Door 50: once every book is collected, opens the locked door when you're near it." })
+    Useful:AddToggle("AutoBreaker", { Text = "Auto Breaker Box", Default = false, Tooltip = "Automatically completes the breaker box (legit method)." })
 
-    Useful:AddToggle("AutoHeartbeat", {
-        Text = "Auto Heartbeat Mini-Game", Default = false,
-        Tooltip = "Automatically passes the Figure heartbeat mini-game.",
-    })
+    ----------------------------------------------------------------
+    -- Manual group (buttons)
+    ----------------------------------------------------------------
+    local Manual = MainTab:AddRightGroupbox("Manual", "hand")
+    Manual:AddButton({ Text = "Kill Self",  Func = killSelf,   Tooltip = "Sets your health to 0." })
+    Manual:AddButton({ Text = "Revive",     Func = reviveSelf, Tooltip = "Attempts to revive you (needs a revive available)." })
+    Manual:AddButton({ Text = "Play Again", Func = playAgain,  Tooltip = "Presses the Play Again button for you." })
+    Manual:AddButton({ Text = "Lobby",      Func = lobby,      Tooltip = "Presses the Lobby button to send you to the lobby." })
 
-    Useful:AddToggle("AutoSolveLibrary", {
-        Text = "Auto Solve Library", Default = false,
-        Tooltip = "Door 50: once every book is collected, opens the locked door when you're near it.",
-    })
+    ----------------------------------------------------------------
+    -- Toggle effects (state-watcher: fires on first change, no re-toggle)
+    ----------------------------------------------------------------
+    watch(tval("WalkSpeedEnabled"), function(v)
+        pcall(function() Options.WalkSpeedValue:SetDisabled(not v) end)
+        if not v and humanoid then humanoid.WalkSpeed = DEFAULT_SPEED end
+    end)
 
-    Useful:AddToggle("AutoBreaker", {
-        Text = "Auto Breaker Box", Default = false,
-        Tooltip = "Automatically completes the breaker box (legit method).",
-        Callback = function(v)
-            if not v then return end
-            local rooms = workspace:FindFirstChild("CurrentRooms")
-            if rooms then
-                for _, b in ipairs(rooms:GetDescendants()) do
-                    if b.Name == "ElevatorBreaker" then breaker(b) end
-                end
+    watch(tval("SpeedBypass"), function(v)
+        pcall(function()
+            if Options.WalkSpeedValue.SetMax then Options.WalkSpeedValue:SetMax(v and 100 or 25)
+            else Options.WalkSpeedValue.Max = v and 100 or 25 end
+        end)
+        if not v then
+            if Options.WalkSpeedValue.Value > 25 then pcall(function() Options.WalkSpeedValue:SetValue(25) end) end
+            pcall(function()
+                local rf = getRemotes()
+                local crouch = rf and rf:FindFirstChild("Crouch")
+                if crouch then crouch:FireServer(false) end
+            end)
+            pcall(function() if CollisionClone and CollisionClone.Parent then CollisionClone.Massless = false end end)
+        end
+    end)
+
+    watch(tval("Fly"), function(v)
+        flyEnabled = v
+        if v then startFly() else stopFly() end
+    end)
+
+    watch(tval("PromptClip"), function(v) eachPrompt(function(p) applyClip(p, v) end) end)
+
+    watch(tval("PromptRange"), function(v)
+        pcall(function() Options.PromptRangeMult:SetDisabled(not v) end)
+        eachPrompt(function(p) applyRange(p, v, Options.PromptRangeMult.Value) end)
+    end)
+    watch(oval("PromptRangeMult"), function(v)
+        if Toggles.PromptRange and Toggles.PromptRange.Value then
+            eachPrompt(function(p) applyRange(p, true, v) end)
+        end
+    end)
+
+    watch(tval("InstantPrompt"), function(v) eachPrompt(function(p) applyInstant(p, v) end) end)
+
+    watch(tval("AutoPrompt"), function(v)
+        if v then rebuildInteractions() else table.clear(interactions) end
+        table.clear(fired)
+    end)
+
+    watch(tval("AutoBreaker"), function(v)
+        if not v then return end
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if rooms then
+            for _, b in ipairs(rooms:GetDescendants()) do
+                if b.Name == "ElevatorBreaker" then breaker(b) end
             end
-        end,
-    })
+        end
+    end)
 
     ----------------------------------------------------------------
     -- World connections
@@ -487,7 +488,6 @@ return function(Cora)
             breaker(v)
         end
     end)
-
     workspace.DescendantRemoving:Connect(function(v)
         if not v:IsA("ProximityPrompt") then return end
         fired[v] = nil
@@ -497,9 +497,8 @@ return function(Cora)
     end)
 
     ----------------------------------------------------------------
-    -- Loops (read toggle values live, so no re-toggle needed)
+    -- Runtime loops
     ----------------------------------------------------------------
-    -- Walk speed
     RunService.Heartbeat:Connect(function()
         if humanoid and Toggles.WalkSpeedEnabled.Value then
             if humanoid.WalkSpeed ~= Options.WalkSpeedValue.Value then
@@ -508,7 +507,6 @@ return function(Cora)
         end
     end)
 
-    -- Speed bypass: massless CollisionClone + crouch spam
     task.spawn(function()
         while true do
             task.wait()
@@ -526,7 +524,6 @@ return function(Cora)
         end
     end)
 
-    -- Fast stop + fly steering
     RunService.RenderStepped:Connect(function()
         if not flyEnabled and Toggles.FastStop.Value and humanoid and hrp then
             if humanoid.MoveDirection.Magnitude == 0 then
@@ -548,8 +545,8 @@ return function(Cora)
         end
     end)
 
-    -- Auto Prompt loop
-    local AUTO_REACH = 18
+    -- Auto Prompt: only fires prompts that are genuinely active (Enabled + in real
+    -- range), so it auto-presses real popups instead of consuming dead ones.
     local autoTimer = 0
     RunService.Heartbeat:Connect(function(dt)
         if not Toggles.AutoPrompt.Value then return end
@@ -564,22 +561,17 @@ return function(Cora)
             local p = interactions[i]
             if not p or not p.Parent then
                 table.remove(interactions, i)
-            elseif not fired[p] and not isIgnored(p) then
+            elseif p.Enabled and not fired[p] and not isIgnored(p) then
                 local part = getPromptPart(p)
-                if part then
-                    local reach = math.max(p.MaxActivationDistance, AUTO_REACH)
-                    if (root.Position - part.Position).Magnitude <= reach then
-                        if not p.Enabled then pcall(function() p.Enabled = true end) end
-                        tryEquipFor(p)
-                        firePrompt(p)
-                        fired[p] = true
-                    end
+                if part and (root.Position - part.Position).Magnitude <= p.MaxActivationDistance then
+                    tryEquipFor(p)
+                    firePrompt(p)
+                    fired[p] = true
                 end
             end
         end
     end)
 
-    -- Auto Solve Library loop
     local libTimer = 0
     RunService.Heartbeat:Connect(function(dt)
         if not Toggles.AutoSolveLibrary.Value then return end
@@ -609,7 +601,6 @@ return function(Cora)
         end)
     end)
 
-    -- Auto Heartbeat: force a perfect beat by intercepting the remote call
     if hookmetamethod and getnamecallmethod then
         local old
         old = hookmetamethod(game, "__namecall", function(self, ...)
