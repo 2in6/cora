@@ -1,1 +1,180 @@
-return(function(...)local F={"U2<[0;";"<zFQpPSQ0","<3qQFi7JOZ76yH1YsQG==";"<o7EMPS9=","U[h-7^";"<Q5TMzFJEz+==";"<9FTm/rY0AmY4lSfE/36Vs5Jx/36EzOt=","<PS6pASdwRmTm/XAezFEpPSQhZXiEA7ixlM6ElM9e/FTgRF6EPXz0z5ixlXixl7Wx1FfbP360/3txA7Q7AmTKz3yIAmTg/3EeRN==","Uc,P<O29&QG2(o\"d2(bI9T\"-ig";"U0i4Np0\\bo]","U[hiW\\c1Xs";"<PXi7P3JE";"U8A!N\\oOID2+UsJu[RD","UY8Sr`HAY@WYV6\'5YjQt3cE[HC2qs";"<A16f/3VNlMY5A5cY";"UgbX>&H^.","<Q3V2lFyI","</36IlFVbRc6Kz3cE13ye/3ZEAhV2Z3q=";"U0i4Np";"</1oVouYw6FE9/IQz","Uc,P<O29&[g[k,llY>!RCYT";"U8GqJ*[k4AtH`FBh";"<9FTm/ogEHQiVAu6El9==";"U[61B,2f_Fd[`2;TY>!TTWT6pcc,gsW0rU9#c/jamc$f5%W>fO14-u$=o].laTaIV(/Rcm[[hX[HWR]bAj2(Q.TE-Etu,@E0+OA8","U<IVU?2(.]8HRm";"<z5TxAMdxz7Jxlufp/3selSQ4","Uj`8m+[%X(_+34","<dQfFr14F/ci2l5sm";"Uj3%I#/%*nR[hi.","<17TpP3zV";"<fmY7/3E2z39ws+==";"U0i4N54FT$","U,r.tA\'@fg6o@C_L[.";"<r3ZelufEQ54El3Q1zX6pP3VMAN==";"<97y8PFZmluQezqixl5Tm";"<6FQpoFQmZ7E8z9==","Uc\"&^Oj2=)";"<3pixA7yZs+==","U8Ie6PcEH:","Uj`eA>HZG","<z5Q2/XI=";"<iQ4EiM4el1ieQcYUQQo=";"U0i4NpWhQNC+P5";"<9FT2lusb","<Q54El3Qi/3V4zFQm","UgH&RRu8I0@0srRFu9d","Uc4QY=+S","<Z3VN/3ia","<A8qpP5yOic/b9MyK","<oFQp67T2z5Qm";"U[k3?.<:Z(\\","<QFyYAqsNo34M1kZrA+==","<9FTm/QQel5T4z+==";"U0i4Npj`M.r","U,EmE_YjQp3","U09gH/HAR0=<Igg","<67Eezqz0AMip9F40l59=";"U,6tZT+d2D$+&*).";"<XcT0l76EH+==","U2Hk-[+JE+b";"U2#h5=cI;+&W?CAL<[","UHT7Bo";"U0i4Np0\\bo]Wh1nYY8(::[-QHcHRm";"<13y0lIixl5Tm";"<QXYI/X6E9FT2lufbQXi0l7Zrz3Z0Au6mH9==";"<ZFymlG==";"<37Nmd7ERZIpc/oQVoXs=";"<o7QbPX04/7JE","<P5gJiIQLlpfQoq0dQ9==","U,/cL?4*uP";"<9MZylqTvPIIVAyiwd9==","U][ZHCc1O7?cu";"<iki6dQZ9dIZp1kf1";"<o5J4H3Qm6uQ0";"<9FTm/oJx/36Ez+==";"U/>@F5YVd5";"U0\\t2Q+P0h","<s5QmA7TmLh+=";"<A5i4l5N=";"<9FTm/o4Or5TxPFQI";"<3pixA7yZsS64/h+M","<o7QbzX6vlEiN/XZe","<ZoTMl8y7Z7IFoEINiSd=","U[a%^FoRE\">H.hpj+m)","<9FTm/oc4A7gEAG==";"UoOj=2V]O\":+c*Qb","<9XQplciKluA=";"U4S\'W30i03i+S";"<z5VPQ5Vp9pfw6pi635q=";"UcrBe\"[+","<9ufE/X6EQFEez5Tu","Uj`8m[[-57Zc>lP$cM)3d","Uc,P<O29qFC2H-I(Y>!RCYT";"<A8+u6qybL3/uP5Veop/=";"<9FQeZ5Qm","<Q5yhAN==";"U/_c\'J/hU[7[k4]";"U8o,NG";"UVJ0j?[kY_";"<o5ymz3Vp";"UVOl]%cu";"<15T8/3J9l5yVzXs=","<9FTm/rYsZ3s=","UB7@]M","<AFQpZ5EezudelSQ4","U/6;B$0l4/D<IVU?0i0%1[_@";"<dkyaPpE663scHE6s","U!ASRB<JDQ*/!/!<";"<XcT2z3t=","<67TxZ5Qm","Uj`eIic1\\9#[U";"<l7Qu","<zFQp/uQbZ5Tg/XibzX9=";"U8!J-^cn@V:c4s","<r3ixlG==","<l3yaz3zxl56EAG==";"U/>@F5YVdS]<IFZ"}local function p(p)return F[p+59901]end for p,j in ipairs({{1;117},{1,36};{37;117}})do while j[1]<j[2]do F[j[1]],F[j[2]],j[1],j[2]=F[j[2]],F[j[1]],j[1]+1,j[2]-1 end end do local p=string.len local j=string.sub local I=math.floor local L=type local P=table.concat local Z={p=49;u=39;g=28;q=61,F=82;S=54,A=42,["3"]=67;["#"]=59;J=65;G=45;o=16;m=5;b=7;j=26,[";"]=10;["1"]=50;s=56;["("]=9,["5"]=53;["."]=8,["9"]=1,C=29;_=74,O=11;["\""]=78,a=46;["!"]=17,K=58,["2"]=37,X=84,Z=13;h=19,["8"]=25,["]"]=38,f=2,R=41;U=63;H=35,["&"]=62,["^"]=70;i=57,["@"]=40;M=52,L=81;n=79,Y=31;["4"]=22,["["]=33,["`"]=68;T=14;t=43;["*"]=80;["\'"]=18,P=66;["7"]=55,["?"]=76,["%"]=73,r=77,I=72;["="]=64,["6"]=48;["0"]=21;["<"]=34;Q=60;E=51;[">"]=47,["+"]=36;e=6,["-"]=20;["\\"]=83;V=27;[","]=23,[")"]=4;["$"]=44,W=15,["/"]=24,[":"]=71,B=30,l=3;d=12,N=0,k=75,D=69;c=32}local k=table.insert local Y={w=58;["8"]=35,["0"]=41,D=31;["7"]=38;["4"]=33,T=61,a=43,h=34;["3"]=22;K=40;B=59;q=4,Y=1;H=30;["9"]=16;l=27,P=26;["6"]=17,A=28,x=47,R=11;n=42,u=55,U=10,d=12,s=8,p=52;y=5,S=7;N=48;J=49,F=54;["5"]=6,b=51,["1"]=19;g=45;j=62,c=53;["/"]=24;E=37,C=63,m=50,L=14;I=36;Q=21,f=9;X=23,v=15;k=3,G=32;t=56;M=39;["+"]=0,e=46;Z=29;z=25,["2"]=44;i=13,o=20,V=57,r=18,W=60;O=2}local C=F local z=string.char for F=1,#C,1 do local T=C[F]if L(T)=="string"then local L=j(T,1,1)if L=="<"then T=j(T,2)local L=p(T)local Z={}local s=1 local a=0 local f=0 while s<=L do local F=j(T,s,s)local p=Y[F]if p then a=a+p*(64^((3-f)))f=f+1 if f==4 then f=0 local F=I(a/65536)local p=I((a%65536)/256)local j=a%256 k(Z,z(F,p,j))a=0 end elseif F=="="then k(Z,z(I(a/65536)))if s>=L or j(T,s+1,s+1)~="="then k(Z,z(I((a%65536)/256)))end break end s=s+1 end C[F]=P(Z)elseif L=="U"then T=j(T,2)local L=p(T)local Y={}local s=1 while s<=L do local F=(L-s)+1 local p=F>=5 and 5 or F local P=0 local C=p>1 for F=0,4,1 do local I if F<p then local p=j(T,s+F,s+F)I=Z[p]if not I then C=false break end else I=84 end P=P*85+I end if C then local F=I(P/16777216)%256 local j=I(P/65536)%256 local L=I(P/256)%256 local Z=P%256 if p==5 then k(Y,z(F,j,L,Z))elseif p==4 then k(Y,z(F,j,L))elseif p==3 then k(Y,z(F,j))elseif p==2 then k(Y,z(F))end end s=s+p end C[F]=P(Y)end end end end return(function(P,k,L,F,Y,Z,I,s,a,X,C,D,N,j,O,l,z,y,U,f,R,T)D,l,T,C,y,z,N,X,f,O,s,j,U,a,R=function(F,p)local I=a(p)local L=function(L)return j(F,{L},p,I)end return L end,function(F)z[F]=z[F]-1 if 0==z[F]then z[F],C[F]=nil,nil end end,function()s=s+1 z[s]=1 return s end,{},function(F,p)local I=a(p)local L=function(L,P,Z,k)return j(F,{L;P;Z,k},p,I)end return L end,{},function(F,p)local I=a(p)local L=function(...)return j(F,{...},p,I)end return L end,function(F,p)local I=a(p)local L=function(L,P,Z,k,Y)return j(F,{L;P,Z;k;Y},p,I)end return L end,function(F)local p,j=1,F[1]while j do z[j],p=z[j]-1,p+1 if z[j]==0 then z[j],C[j]=nil,nil end j=F[p]end end,function(F,p)local I=a(p)local L=function(L,P,Z)return j(F,{L;P,Z},p,I)end return L end,0,function(j,L,P,Z)local o,f,z,S,M,A,n,u,Y,t,N,Q,G,r,h,c,q,d,W,s,E,g,a,m while j do if j<9343908 then if 4362174>j then if j<3510107 then if j<2398929 then if 1418766>j then if j<630071 then s=p(-59808)s,a=z[s],p(-59842)s=s(z,a)j,Y=12713010,s elseif 1095734>j then z=p(-59854)Y=F[z]z=Y()Y=p(-59811)j=z[Y]j=j and 3241846 or 11479634 else a=l(a)Y=X(3508914,{z;f})G,j,E=Y,F[p(-59845)],p(-59844)Y=G(E)E=p(-59889)Y=G(E)N,E=nil,p(-59839)Y=G(E)E,S=p(-59856),nil W=R(15160479,{m})M=nil Y=G(E)E=p(-59877)Y=G(E)E=p(-59786)Y=F[E]E=Y(W)W=p(-59864)Y=n()E=F[W]W=p(-59818)Y=E[W]W=p(-59864)z=l(z)E=Y(n)g=l(g)E=F[W]W=p(-59824)m=l(m)Y=E[W]W,s=.25,nil f=l(f)G=nil E=Y(W,n)n,Y=nil,{}end else if j<1696621 then z=R(13257813,{P[1]})Y=p(-59786)j=F[Y]Y=j(z)Y=p(-59786)j=F[Y]z=D(13719101,{P[1]})Y=j(z)Y,j={},F[p(-59819)]else z,Y=p(-59791),p(-59808)j=C[P[1]]Y=j[Y]Y=Y(j,z)z=Y Y,j=z,z and 216556 or 12713010 end end else if 3168057>j then j=p(-59802)z,s,N=j,j,p(-59853)a=F[N]Y,j=a,a and 3820875 or 9164319 elseif j<3247506 then z=p(-59854)Y=F[z]z=Y()Y=p(-59811)j=z[Y]Y=j()j=11479634 elseif 3381040>j then j=p(-59788)j=s[j]j=j(s)j=3511301 else z=T()Y=p(-59786)a=y(5574524,{P[1],z})C[z]=L[1]j=F[Y]N={j(a)}s,Y=N[2],N[1]N=T()C[N]=s a=Y j=not a j=j and 5553268 or 11795677 end end else if j<3842325 then if 3542367>j then Y,s,z,j={},nil,nil,F[p(-59862)]elseif 3610981>j then z=p(-59854)Y=F[z]z=Y()Y=p(-59812)j=z[Y]j=j and 10297165 or 15725878 elseif 3734702>j then s=p(-59869)z=F[s]j,Y=13619024,z else N=p(-59853)a=F[N]j=9164319 N=a(z)Y=N end else if 3912386>j then f=p(-59814)N=F[f]s,a=N,j j=N and 6895092 or 13778477 elseif 3972699>j then Y=p(-59786)j=F[Y]z=D(7504014,{P[1]})Y=j(z)Y,j={},F[p(-59874)]elseif j<3991008 then s=p(-59866)z=F[s]Y,j=z,z and 3863776 or 8998241 else S=p(-59863)f=F[S]S=f()a,j=S,7143245 end end end else if j<6462504 then if j>4870912 then if 5223766>j then S,g,s=p(-59787),p(-59805),p(-59827)j=C[P[1]]N=C[P[2]]m=F[g]M=C[P[3]]g=m(M)f=S..g a=N..f z=s..a s,Y=8,p(-59835)Y=j[Y]Y=Y(j,z,s)j,Y=F[p(-59794)],{}elseif 5563896>j then G,Y,M=p(-59805),p(-59799),p(-59834)j=F[Y]m=C[z]f=p(-59784)n=F[G]E=C[N]G=n(E)g=M..G S=m..g s=f..S Y=j(s)s=U(4894264,{P[2];z;N})Y=p(-59786)j=F[Y]Y=j(s)j=11795677 elseif 5940976>j then z=p(-59892)Y=C[P[1]]j=Y[z]z=C[P[2]]Y=j(z)j=Y()z=C[P[1]]Y=j(z)Y,j={},F[p(-59807)]else j=s j[Y]=z j,Y=F[p(-59804)],{}end else if 4733033>j then S=p(-59863)j=C[P[1]]N=j f=F[S]s,a=j,f j,Y=f and 3997615 or 7143245,p(-59882)elseif 4764445>j then Y=p(-59786)f=X(1043587,{})j=F[Y]Y=j(f)Y,j={},F[p(-59899)]elseif j<4818559 then s=p(-59826)z=T()C[z]=L[1]Y=p(-59860)j=F[Y]Y=p(-59829)Y=j[Y]Y=Y(j,s)s,f=Y,p(-59854)Y=p(-59880)a=T()j=s[Y]C[a]=j N=F[f]j,Y=N and 14978727 or 14142282,N else G=p(-59786)Y=F[G]E=D(14978548,{})W=p(-59897)G=Y(E)E=p(-59810)G=F[E]E=p(-59870)Y=G[E]E=p(-59871)G=Y(E)E=T()C[E]=G Y=C[E]G=p(-59884)Y[G]=W Y=C[E]W,G=7417657>14021233,p(-59900)Y[G]=W W=X(4726733,{E})j,G=1147881,p(-59786)Y=F[G]G=Y(W)G=p(-59854)Y=F[G]G=Y()Y=p(-59897)W=C[E]G[Y]=W G=p(-59854)Y=F[G]W=13010459<14365452 G=Y()Y=p(-59790)G[Y]=W G=p(-59854)Y=F[G]G=Y()W=D(1689652,{f})Y=p(-59811)G[Y]=W G=p(-59854)W=R(11246454,{f,a})Y=F[G]E=l(E)G=Y()Y=p(-59812)G[Y]=W end end else if 7323629>j then if 6675476>j then Y=p(-59869)j=F[Y]Y=j(z)j=6733373 C[P[1]]=Y z=nil elseif j<6814232 then Y,j={},F[p(-59832)]elseif 7019168>j then S,f=p(-59855),p(-59814)N=F[f]f=N(S)j,s=13778477,f else j,z=N,a j=a and 6307429 or 14570601 end else if 8251127>j then z=p(-59825)Y=C[P[1]]j=Y[z]z=j j,a=p(-59830),p(-59821)s=F[a]N,a,f=12,p(-59828),12 Y=s[a]a=12 s=Y(a,N,f)z[j]=s f,j,a,N=18,p(-59801),p(-59821),18 s=F[a]a=p(-59828)Y=s[a]a=18 s=Y(a,N,f)z[j]=s a=p(-59821)s=F[a]j,a,f,N=p(-59809),p(-59828),255,255 Y=s[a]a=255 s=Y(a,N,f)z[j]=s N,f,j,a=40,40,p(-59843),p(-59821)s=F[a]a=p(-59828)Y=s[a]a=40 s=Y(a,N,f)z[j]=s j,a,f,N=p(-59894),p(-59821),255,255 s=F[a]a=p(-59828)Y=s[a]a=255 s=Y(a,N,f)z[j]=s Y=C[P[1]]s=p(-59800)j=Y[s]j=j and 15271532 or 16393073 elseif j<9047939 then j=Y and 15971104 or 9097638 elseif j<9130978 then Y,j={},F[p(-59823)]else j=s j=not Y j=j and 11503143 or 6617580 end end end end else if j>14002164 then if j<15167125 then if j>14667171 then if j<14871145 then j=C[P[1]]Y=p(-59848)Y=j[Y]Y=Y(j)j,Y=F[p(-59813)],{}elseif j<14978637 then z=p(-59854)Y=F[z]z=Y()Y=p(-59897)j=z[Y]z=j j=z and 9523497 or 13862046 elseif j<15069603 then S=p(-59854)f=F[S]j=14142282 S=f()f=p(-59790)N=S[f]Y=N else Y=p(-59876)j=C[P[1]]Y=j[Y]Y=Y(j)j,Y=F[p(-59792)],{}end else if j<14190368 then j=Y and 12917402 or 11793215 elseif 14287812>j then Y=p(-59786)f=D(3573433,{})j=F[Y]Y=j(f)Y=p(-59854)j=F[Y]Y=j()j,f=p(-59790),nil Y[j]=f Y,f=p(-59854),nil j=F[Y]Y=j()j=p(-59811)Y[j]=f f=nil N=l(N)Y=p(-59854)j=F[Y]Y=j()j=p(-59812)Y[j]=f Y=p(-59854)j=F[Y]Y=j()j,f=p(-59785),nil Y[j]=f j=11793215 elseif 14453885>j then z=p(-59854)Y=F[z]z=Y()Y=p(-59897)j=z[Y]j=j and 15173772 or 15817466 else j,f,N=6307429,p(-59833),p(-59860)a=F[N]N=p(-59829)N=a[N]N=N(a,f)z=N end end else if 15894285>j then if j<15222652 then z=p(-59854)Y=F[z]z=Y()Y=p(-59897)j=z[Y]Y=p(-59788)Y=j[Y]Y=Y(j)j=15817466 elseif j<15498705 then Y=p(-59800)j=C[P[1]]Y=j[Y]Y=Y(j)j=16393073 elseif 15771672>j then j,Y=F[p(-59896)],{}else Y,j={},F[p(-59893)]end else if 15993054>j then z,Y=p(-59855),p(-59866)j=F[Y]Y=j(z)j=9097638 elseif 16042970>j then a,z=nil,p(-59854)Y=F[z]z=Y()Y=p(-59897)j=z[Y]z=j s=z~=a j,Y=s and 13012777 or 16070936,s elseif j<16232004 then j,z=F[p(-59816)],nil C[P[1]]=Y Y={}else j,z,Y=F[p(-59850)],nil,{}end end end else if j<12254343 then if 11363044>j then if 10466095>j then if 9877989>j then j=p(-59788)j=z[j]j=j(z)j=13862046 elseif 10264823>j then s=p(-59793)z=F[s]j,Y=z and 3648529 or 13619024,z else z=p(-59854)Y=F[z]z=Y()Y=p(-59812)j=z[Y]Y=j()j=15725878 end else if j<10940740 then z=L j=R(4789558,{})Y={j}j=F[p(-59837)]else Y=p(-59786)z=O(14763742,{P[1]})j=F[Y]Y=j(z)Y=p(-59786)z=y(1703590,{P[2]})j=F[Y]Y=j(z)Y=p(-59786)z=O(14337169,{})j=F[Y]Y=j(z)Y=p(-59854)j=F[Y]Y=j()j,z=p(-59897),nil Y[j]=z Y=p(-59854)j=F[Y]Y=j()z,j=nil,p(-59812)Y[j]=z Y=p(-59854)j=F[Y]Y=j()j,z=p(-59790),nil Y[j]=z Y=p(-59854)j=F[Y]Y=j()z,j=nil,p(-59811)Y[j]=z Y,j={},F[p(-59875)]end end else if 11491388>j then Y,j={},F[p(-59898)]elseif 11648179>j then Y,N=p(-59793),p(-59841)j=F[Y]a=p(-59860)s=F[a]f=p(-59795)f=s[f]a={f(s,N)}Y=j(z,I(a))j=6617580 elseif 11794446>j then Y,S,j=p(-59840),p(-59860),p(-59857)N=j j=F[Y]f=F[S]g=p(-59865)m=N..g q,g=p(-59895),p(-59795)g=f[g]S={g(f,m)}Y=j(I(S))m,h,c=p(-59860),11893736>9228553,5936810~=15166932 f=T()j=Y()Y=p(-59840)C[f]=j j=F[Y]G,M,E=p(-59879),p(-59847),p(-59872)S=F[m]n=p(-59851)g=N..M M=p(-59795)M=S[M]m={M(S,g)}Y=j(I(m))g=p(-59860)j=Y()S,Y=j,p(-59840)j=F[Y]m=F[g]M=N..n n=p(-59795)n=m[n]g={n(m,M)}n=p(-59881)Y=j(I(g))j=Y()Y=p(-59786)m=T()t=p(-59797)C[m]=j j=F[Y]g=y(3984402,{})Y=j(g)Q=p(-59868)g=T()Y,j=p(-59786),p(-59803)C[g]=j j=F[Y]r=p(-59861)M=O(10232481,{g})Y=j(M)A=p(-59883)j=C[f]d=j o=C[z]Y=p(-59891)Y,d=j[Y],p(-59867)u=o[A]A,o=16108654>=13190594,p(-59846)W=u or o u=C[g]o=p(-59887)M={[n]=G,[E]=W,[d]=u;[o]=A,[q]=h;[t]=c,[Q]=r}Y=Y(j,M)M=Y Y=X(3960996,{f})G,n,W=p(-59789),Y,p(-59885)Y=n()Y=C[z]E=C[f]Y[G]=E Y=C[z]E,G=S,p(-59820)Y[G]=E G=p(-59836)Y=C[z]E=C[m]Y[G]=E Y=C[z]E,G=M,p(-59849)Y[G]=E E={}Y=C[z]G=p(-59886)Y[G]=E G=C[f]Y=p(-59838)Y=S[Y]Y=Y(S,G)G=p(-59838)Y=C[m]E=C[f]G=Y[G]G=G(Y,E)Y=C[m]G,E=p(-59831),{W}G=Y[G]G=G(Y)Y=C[m]G=p(-59890)G=Y[G]G=G(Y,E)Y=p(-59815)Y,G=S[Y],p(-59846)Y=Y(S,G)E=p(-59822)Y=C[m]G=p(-59815)G=Y[G]G=G(Y,E)G=p(-59854)Y=F[G]j=Y and 4847561 or 1147881 else Y={}z=l(z)j=F[p(-59798)]N=l(N)a=nil end end else if j<13438418 then if j<12815206 then s=Y j=s and 3253167 or 3511301 elseif j<12965089 then Y=p(-59786)N=T()j=1950324>11285376 C[N]=j f=O(16015005,{N})j=F[Y]Y=j(f)j=C[N]j=j and 4739333 or 14238455 elseif j<13135295 then j,N=16070936,p(-59882)a=z[N]N=nil s=a~=N Y=s else s=4 j=C[P[1]]Y=p(-59835)Y,z=j[Y],p(-59858)Y=Y(j,z,s)Y,j={},F[p(-59796)]end else if 13669062>j then j=Y and 3094268 or 6733373 elseif j<13748789 then Y,z=p(-59859),4435637>3181986 j=C[P[1]]j[Y]=z j,Y=F[p(-59888)],{}elseif j<13820261 then z,j=not s,a Y,j=z,8998241 else z,j,Y=nil,F[p(-59852)],{}end end end end end end j=#Z return I(Y)end,function(F,p)local I=a(p)local L=function()return j(F,{},p,I)end return L end,function(F)for p=1,#F,1 do z[F[p]]=1+z[F[p]]end if L then local j=L(true)local I=Z(j)I[p(-59806)],I[p(-59878)],I[p(-59873)]=F,f,function()return 2298363 end return j else return P({},{[p(-59878)]=f;[p(-59806)]=F;[p(-59873)]=function()return 2298363 end})end end,function(F,p)local I=a(p)local L=function(L,P)return j(F,{L,P},p,I)end return L end return(N(10635026,{}))(I(Y))end)(setmetatable,select,newproxy,getfenv and getfenv()or _ENV,{...},getmetatable,unpack or table[p(-59817)])end)(...)
+--[[
+    Cora • CORE / BOOTSTRAP  —  goes in /main.lua
+    Loads Obsidian + addons, downloads the logo icon, creates the "Cora Hub"
+    window, forces a dark theme with a white accent, then loads the DOORS tabs
+    from /doors and the shared settings.lua from the repo root.
+--]]
+
+return function(Cora)
+    local Players = game:GetService("Players")
+    local LP      = Players.LocalPlayer
+
+    -- Single instance: if Cora is already running, just reveal the existing
+    -- window and STOP. Rebuilding on every execution re-ran the tabs each time,
+    -- which re-applied loops and the __namecall hook - that stacking caused the
+    -- crash and the window flicker. To load a new version, use the Unload button
+    -- in the Settings tab first, then run again.
+    if getgenv and getgenv().CoraLoaded then
+        -- Verify the UI still exists. A place teleport (e.g. entering The Rooms
+        -- from the Hotel) wipes the GUI but leaves these globals set, which used
+        -- to make Cora think it was still loaded and refuse to rebuild - so it
+        -- "didn't load" in sub-places. If the marker is gone we're in a fresh
+        -- place: clear the globals (and the hook guard so the hook re-installs)
+        -- and fall through to a full rebuild.
+        local alive = false
+        pcall(function()
+            local m = getgenv().CoraMarker
+            alive = m ~= nil and m.Parent ~= nil
+        end)
+        if alive then
+            pcall(function() if getgenv().CoraShow then getgenv().CoraShow() end end)
+            return
+        end
+        pcall(function() if getgenv().CoraUnload then getgenv().CoraUnload() end end)
+        getgenv().CoraLoaded   = nil
+        getgenv().CoraShow     = nil
+        getgenv().CoraUnload   = nil
+        getgenv().CoraHBHooked = nil
+    end
+
+    local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
+
+    local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
+    local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+    local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+    -- Download the window logo -> usable asset (falls back to lucide "moon")
+    pcall(function()
+        if makefolder and not (isfolder and isfolder("CoraData")) then
+            makefolder("CoraData")
+        end
+    end)
+    local moonIcon = "moon"
+    pcall(function()
+        if writefile and getcustomasset then
+            local path = "CoraData/cora_logo.png"
+            if not (isfile and isfile(path)) then
+                writefile(path, game:HttpGet(
+                    "https://i.ibb.co/4RjdkFND/bedtime-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
+                ))
+            end
+            moonIcon = getcustomasset(path)
+        end
+    end)
+
+    -- Resolve the area for display in Settings. The main DOORS place covers
+    -- several floors under one place id, so refine from the live floor when
+    -- possible; otherwise keep the loader's default. Stored on Cora so the
+    -- Settings tab can show it. The window title itself is always "Cora Hub".
+    local Window = Library:CreateWindow({
+        Title         = "Cora Hub",
+        Footer        = Cora.Version or "Cora",
+        Icon          = moonIcon,
+        Center        = true,
+        AutoShow      = true,
+        Resizable     = true,
+        NotifySide    = "Right",
+    })
+    -- NOTE: the menu toggle key is intentionally NOT set here. It is owned solely
+    -- by the Settings tab's MenuKeybind keypicker (Library.ToggleKeybind =
+    -- Options.MenuKeybind), exactly as the Obsidian Example does. Setting it in
+    -- both places makes two handlers fire on the same key = open+close = no-op.
+
+    -- Dark background, white accent. Defined as a function so we can
+    -- re-assert it AFTER ThemeManager / config autoload run.
+    local function applyCoraScheme()
+        pcall(function()
+            local S = Library.Scheme
+            S.BackgroundColor = Color3.fromRGB(12, 12, 12)
+            S.MainColor       = Color3.fromRGB(18, 18, 18)
+            S.AccentColor     = Color3.fromRGB(255, 255, 255)
+            S.OutlineColor    = Color3.fromRGB(40, 40, 40)
+            S.FontColor       = Color3.fromRGB(255, 255, 255)
+            if Library.UpdateColorsUsingRegistry then
+                Library:UpdateColorsUsingRegistry()
+            end
+        end)
+    end
+    applyCoraScheme()
+
+    -- Share objects with other modules
+    Cora.Library      = Library
+    Cora.ThemeManager = ThemeManager
+    Cora.SaveManager  = SaveManager
+    Cora.Window       = Window
+    Cora.Tabs         = {}
+
+    ThemeManager:SetLibrary(Library)
+    SaveManager:SetLibrary(Library)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+    -- Themes in the global "Cora" folder; configs in a separate subfolder.
+    ThemeManager:SetFolder("Cora")
+    SaveManager:SetFolder("Cora/doors")
+
+    -- Register the unload handle NOW (right after the window exists), so the
+    -- single-instance guard works even if a tab errors while loading.
+    if getgenv then
+        -- Liveness marker we fully control: it shares the window's lifetime and,
+        -- crucially, is destroyed by a place teleport. The guard at the top uses
+        -- it to tell "already loaded here" apart from "stale globals left over
+        -- after teleporting into a sub-place like The Rooms".
+        pcall(function()
+            local old = getgenv().CoraMarker
+            if old then old:Destroy() end
+        end)
+        local marker = Instance.new("ScreenGui")
+        marker.Name         = "CoraMarker"
+        marker.ResetOnSpawn = false
+        pcall(function() marker.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+        getgenv().CoraMarker = marker
+
+        getgenv().CoraLoaded = true
+        getgenv().CoraShow = function()
+            pcall(function() Library:Notify("Cora is already loaded.", 4) end)
+            pcall(function() Library.Toggled = true end)
+        end
+        getgenv().CoraUnload = function()
+            pcall(function() Library:Unload() end)
+            pcall(function()
+                local pg = LP:FindFirstChild("PlayerGui")
+                local kg = pg and pg:FindFirstChild("CoraKeySystem")
+                if kg then kg:Destroy() end
+            end)
+            pcall(function() if getgenv().CoraMarker then getgenv().CoraMarker:Destroy() end end)
+            getgenv().CoraMarker = nil
+            getgenv().CoraUnload = nil
+            getgenv().CoraLoaded = nil
+            getgenv().CoraShow   = nil
+        end
+    end
+
+    -- Load each tab in isolation. If one tab errors it must NOT stop the others
+    -- (this is why Settings stopped loading before), and the real error is shown.
+    local function loadTab(file)
+        local ok, err = pcall(function() Cora.fetch(file)()(Cora) end)
+        if not ok then
+            warn("[Cora] tab '" .. file .. "' failed: " .. tostring(err))
+            pcall(function()
+                Library:Notify("[Cora] " .. file .. " error: " .. tostring(err), 8)
+            end)
+        end
+    end
+    -- DOORS tabs (in the /doors folder) + the shared settings.lua (repo root).
+    loadTab("doors/maintab.lua")
+    loadTab("doors/antitab.lua")
+    loadTab("doors/floortab.lua")
+    loadTab("doors/visualstab.lua")
+    loadTab("settings.lua")
+
+    -- Autoload config, then re-assert the white accent so it wins. ThemeManager
+    -- applies its own default theme (a purple accent) on a DEFERRED frame when the
+    -- Settings tab builds, which lands after this point — so we re-assert Cora's
+    -- scheme on the next frame (and once more shortly after as a safety net) to
+    -- override it. These run once at load, so the user can still pick another
+    -- theme afterward and it will stick.
+    pcall(function() SaveManager:LoadAutoloadConfig() end)
+    applyCoraScheme()
+    task.defer(applyCoraScheme)
+    task.delay(0.25, applyCoraScheme)
+end
