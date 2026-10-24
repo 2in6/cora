@@ -1,180 +1,896 @@
 --[[
-    Cora • CORE / BOOTSTRAP  —  goes in /main.lua
-    Loads Obsidian + addons, downloads the logo icon, creates the "Cora Hub"
-    window, forces a dark theme with a white accent, then loads the DOORS tabs
-    from /doors and the shared settings.lua from the repo root.
+    Cora • TAB FILE: Main  —  goes in /maintab.lua
+    (This is a TAB file, NOT the bootstrap. The bootstrap lives in main.lua.)
+    Movement / Prompt Exploits / Useful / Manual.
+    Toggle effects driven by a state-watcher loop (no re-toggle needed).
+    Auto Prompt scans the prompt list and fires every prompt within its REAL
+    (pre-Prompt-Range) activation distance, so Prompt Range can't break it and
+    containers/tables aren't blocked by prompt exclusivity.
 --]]
 
 return function(Cora)
-    local Players = game:GetService("Players")
-    local LP      = Players.LocalPlayer
+    local Library = Cora.Library
+    local Window  = Cora.Window
+    local Toggles = Library.Toggles
+    local Options = Library.Options
 
-    -- Single instance: if Cora is already running, just reveal the existing
-    -- window and STOP. Rebuilding on every execution re-ran the tabs each time,
-    -- which re-applied loops and the __namecall hook - that stacking caused the
-    -- crash and the window flicker. To load a new version, use the Unload button
-    -- in the Settings tab first, then run again.
-    if getgenv and getgenv().CoraLoaded then
-        -- Verify the UI still exists. A place teleport (e.g. entering The Rooms
-        -- from the Hotel) wipes the GUI but leaves these globals set, which used
-        -- to make Cora think it was still loaded and refuse to rebuild - so it
-        -- "didn't load" in sub-places. If the marker is gone we're in a fresh
-        -- place: clear the globals (and the hook guard so the hook re-installs)
-        -- and fall through to a full rebuild.
-        local alive = false
+    local Players          = game:GetService("Players")
+    local RunService       = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local ReplicatedStorage= game:GetService("ReplicatedStorage")
+    local TeleportService  = game:GetService("TeleportService")
+    local LP               = Players.LocalPlayer
+
+    ----------------------------------------------------------------
+    -- Tab (created FIRST, matching every other tab file's pattern, so the
+    -- button registers immediately instead of after ~500 lines of setup)
+    ----------------------------------------------------------------
+    local MainTab = Window:AddTab("Main", "house")
+    Cora.Tabs.Main = MainTab
+
+    ----------------------------------------------------------------
+    -- State-watcher: runs fn(value) once at startup and on every change
+    ----------------------------------------------------------------
+    local _watch = {}
+    local function watch(getter, fn) table.insert(_watch, { get = getter, last = nil, fn = fn }) end
+    RunService.Heartbeat:Connect(function()
+        for _, w in ipairs(_watch) do
+            local ok, v = pcall(w.get)
+            if ok and v ~= w.last then
+                w.last = v
+                pcall(w.fn, v)
+            end
+        end
+    end)
+    local function tval(idx) return function() return Toggles[idx] and Toggles[idx].Value end end
+    local function oval(idx) return function() return Options[idx] and Options[idx].Value end end
+
+    ----------------------------------------------------------------
+    -- State
+    ----------------------------------------------------------------
+    local character, humanoid, hrp
+    local DEFAULT_SPEED = 16
+    local flyEnabled = false
+    local flyBV
+    local CollisionClone
+    local godApplied = false
+    local godSnap    = nil   -- captured real default hitbox values
+
+    ----------------------------------------------------------------
+    -- Fly helpers
+    ----------------------------------------------------------------
+    local function stopFly()
+        if flyBV then flyBV:Destroy(); flyBV = nil end
+    end
+    local function startFly()
+        if not hrp then return end
+        stopFly()
+        flyBV = Instance.new("BodyVelocity")
+        flyBV.Name     = "CoraFlightVelocity"
+        flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyBV.Velocity = Vector3.zero
+        flyBV.P        = 9e4
+        flyBV.Parent   = hrp
+    end
+
+    ----------------------------------------------------------------
+    -- Doors remotes + collision clone
+    ----------------------------------------------------------------
+    local function getRemotes()
+        return ReplicatedStorage:FindFirstChild("EntityInfo")
+            or ReplicatedStorage:FindFirstChild("Bricks")
+            or ReplicatedStorage:FindFirstChild("RemotesFolder")
+    end
+
+    local function ensureCollisionClone()
+        if not character then return end
+        local existing = character:FindFirstChild("CollisionClone")
+        if existing then CollisionClone = existing; return end
+        local cp = character:FindFirstChild("CollisionPart")
+        if cp then
+            CollisionClone = cp:Clone()
+            CollisionClone.Name         = "CollisionClone"
+            CollisionClone.RootPriority = 127
+            CollisionClone.Anchored     = false
+            CollisionClone.CanCollide   = false
+            local cc = CollisionClone:FindFirstChild("CollisionCrouch")
+            if cc then cc:Destroy() end
+            CollisionClone.Parent = character
+        end
+    end
+
+    local function onCharacter(char)
+        character = char
+        humanoid  = char:WaitForChild("Humanoid", 10)
+        hrp       = char:WaitForChild("HumanoidRootPart", 10)
+        CollisionClone = nil
+        godApplied = false
+        godSnap    = nil
+        if flyEnabled then startFly() end
+    end
+    LP.CharacterAdded:Connect(onCharacter)
+    if LP.Character then task.spawn(onCharacter, LP.Character) end
+
+    ----------------------------------------------------------------
+    -- Manual action helpers (Doors remotes, fired ONCE each)
+    ----------------------------------------------------------------
+    local function fireOnce(name, ...)
+        local rf = getRemotes()
+        local r = rf and rf:FindFirstChild(name)
+        if not r then return false end
+        local args = { ... }
         pcall(function()
-            local m = getgenv().CoraMarker
-            alive = m ~= nil and m.Parent ~= nil
+            if r:IsA("RemoteEvent") then r:FireServer(table.unpack(args))
+            elseif r:IsA("RemoteFunction") then r:InvokeServer(table.unpack(args)) end
         end)
-        if alive then
-            pcall(function() if getgenv().CoraShow then getgenv().CoraShow() end end)
+        return true
+    end
+
+    local function killSelf()
+        -- Doors handles death via its own systems; replicatesignal(Kill) is cleanest,
+        -- drowning is the fallback, Humanoid.Health a last resort.
+        if replicatesignal and LP:FindFirstChild("Kill") then
+            pcall(function() replicatesignal(LP.Kill) end)
             return
         end
-        pcall(function() if getgenv().CoraUnload then getgenv().CoraUnload() end end)
-        getgenv().CoraLoaded   = nil
-        getgenv().CoraShow     = nil
-        getgenv().CoraUnload   = nil
-        getgenv().CoraHBHooked = nil
+        local rf = getRemotes()
+        if rf and rf:FindFirstChild("Underwater") then
+            task.spawn(function()
+                for _ = 1, 30 do
+                    if LP:GetAttribute("Alive") == false then break end
+                    pcall(function() rf.Underwater:FireServer(true) end)
+                    task.wait(0.1)
+                end
+                pcall(function() if rf:FindFirstChild("Underwater") then rf.Underwater:FireServer(false) end end)
+            end)
+            return
+        end
+        pcall(function()
+            local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.Health = 0 end
+        end)
     end
 
-    local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
+    local function reviveSelf() fireOnce("Revive") end
+    local function playAgain() fireOnce("PlayAgain") end
+    local function lobby()     fireOnce("Lobby") end
 
-    local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
-    local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-    local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
-    -- Download the window logo -> usable asset (falls back to lucide "moon")
-    pcall(function()
-        if makefolder and not (isfolder and isfolder("CoraData")) then
-            makefolder("CoraData")
-        end
-    end)
-    local moonIcon = "moon"
-    pcall(function()
-        if writefile and getcustomasset then
-            local path = "CoraData/cora_logo.png"
-            if not (isfile and isfile(path)) then
-                writefile(path, game:HttpGet(
-                    "https://i.ibb.co/4RjdkFND/bedtime-100dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png"
-                ))
+    ----------------------------------------------------------------
+    -- God Mode (ported from Supreme Hub: displaces/shrinks the Collision hitbox)
+    ----------------------------------------------------------------
+    -- NOTE: Figure (FigureRig/FigureRagdoll), Groundskeeper, Bramble
+    -- (LiveEntityBramble), Eyes and Lookman are intentionally EXCLUDED - god mode
+    -- doesn't protect against them, so detecting them just causes needless lagback.
+    local EntityNames = {
+        RushMoving = true, AmbushMoving = true, A60 = true, A120 = true,
+        GlitchRush = true, GlitchAmbush = true,
+        BackdoorRush = true, BackdoorLookman = true, JeffTheKiller = true,
+        Snare = true, GrumbleRig = true, MandrakeLive = true,
+    }
+    local function partOf(v)
+        if v:IsA("BasePart") then return v end
+        if v:IsA("Model") then return v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart") end
+        return nil
+    end
+    local function entityNear(range)
+        local char = LP.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return false end
+        for _, v in ipairs(workspace:GetChildren()) do
+            if EntityNames[v.Name] then
+                local part = partOf(v)
+                if part and (root.Position - part.Position).Magnitude <= range then return true end
             end
-            moonIcon = getcustomasset(path)
         end
-    end)
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if rooms then
+            for _, v in ipairs(rooms:GetDescendants()) do
+                if EntityNames[v.Name] then
+                    local part = partOf(v)
+                    if part and (root.Position - part.Position).Magnitude <= range then return true end
+                end
+            end
+        end
+        return false
+    end
 
-    -- Resolve the area for display in Settings. The main DOORS place covers
-    -- several floors under one place id, so refine from the live floor when
-    -- possible; otherwise keep the loader's default. Stored on Cora so the
-    -- Settings tab can show it. The window title itself is always "Cora Hub".
-    local Window = Library:CreateWindow({
-        Title         = "Cora Hub",
-        Footer        = Cora.Version or "Cora",
-        Icon          = moonIcon,
-        Center        = true,
-        AutoShow      = true,
-        Resizable     = true,
-        NotifySide    = "Right",
+    -- Capture the character's REAL default hitbox values ONCE, before god ever
+    -- modifies them, so godDisable can restore them exactly. (Previously it
+    -- restored hardcoded guesses, which left the hitbox the wrong size after an
+    -- entity passed and god auto-disabled - that's what broke vent-climbing.)
+    local function snapshotGod()
+        local char = LP.Character
+        if not char then return end
+        local hum  = char:FindFirstChildOfClass("Humanoid")
+        local col  = char:FindFirstChild("Collision")
+        local cc   = col and col:FindFirstChild("CollisionCrouch")
+        local lt   = char:FindFirstChild("LowerTorso")
+        local root = lt and lt:FindFirstChild("Root")
+        godSnap = {
+            hip        = hum and hum.HipHeight,
+            colSize    = col and col.Size,
+            crouchSize = cc and cc.Size,
+            c1         = root and root.C1,
+        }
+    end
+
+    local function godEnable()
+        local char = LP.Character
+        if not char then return end
+        if not godSnap then snapshotGod() end   -- grab true defaults first
+        local rf = getRemotes()
+        if rf and rf.Name ~= "RemotesFolder" then
+            local col = char:FindFirstChild("Collision")
+            if col then col.Position -= Vector3.new(0, 4, 0) end
+        else
+            local cp = char:FindFirstChild("CollisionPart")
+            if cp then pcall(function() char:PivotTo(cp.CFrame * CFrame.new(0, -2, 0)) end) end
+        end
+    end
+
+    local function godDisable()
+        local char = LP.Character
+        if not char then return end
+        local rf = getRemotes()
+        if rf and rf.Name == "RemotesFolder" then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local col = char:FindFirstChild("Collision")
+            local lt  = char:FindFirstChild("LowerTorso")
+            local cp  = char:FindFirstChild("CollisionPart")
+            local snap = godSnap or {}
+            -- restore the EXACT captured defaults (only fall back if we somehow
+            -- never snapshotted, e.g. god was applied before the char loaded)
+            if hum and snap.hip then hum.HipHeight = snap.hip end
+            if col then
+                if snap.colSize then col.Size = snap.colSize end
+                local cc = col:FindFirstChild("CollisionCrouch")
+                if cc and snap.crouchSize then cc.Size = snap.crouchSize end
+            end
+            if lt and lt:FindFirstChild("Root") and snap.c1 then lt.Root.C1 = snap.c1 end
+            if cp then pcall(function() char:PivotTo(cp.CFrame * CFrame.new(0, 2, 0)) end) end
+        else
+            local col = char:FindFirstChild("Collision")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if col and root then col.Position = root.Position end
+        end
+    end
+
+    local function godEnforce()
+        local char = LP.Character
+        if not char then return end
+        local rf = getRemotes()
+        if not (rf and rf.Name == "RemotesFolder") then return end
+        local crouch = rf:FindFirstChild("Crouch")
+        if crouch then pcall(function() crouch:FireServer(true) end) end -- figure-hearing, god needs it
+        local lt  = char:FindFirstChild("LowerTorso")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local col = char:FindFirstChild("Collision")
+        if lt and lt:FindFirstChild("Root") and lt.Root.C1 ~= CFrame.new(0, -2.3, 0) then lt.Root.C1 = CFrame.new(0, -2.3, 0) end
+        if hum and hum.HipHeight ~= 0.22 then hum.HipHeight = 0.22 end
+        if col and col.Size ~= Vector3.new(1, 1, 4) then col.Size = Vector3.new(1, 1, 4) end
+        if col and col:FindFirstChild("CollisionCrouch") and col.CollisionCrouch.Size ~= Vector3.new(1, 1, 4) then
+            col.CollisionCrouch.Size = Vector3.new(1, 1, 4)
+        end
+    end
+
+    ----------------------------------------------------------------
+    -- Prompt helpers
+    ----------------------------------------------------------------
+    local fireprompt = fireproximityprompt -- executor fn (may be nil)
+
+    local function getPromptPart(p)
+        local par = p.Parent
+        if not par then return nil end
+        if par:IsA("BasePart") then return par end
+        if par:IsA("Model") and par.PrimaryPart then return par.PrimaryPart end
+        local bp = par:FindFirstChildWhichIsA("BasePart")
+        if bp then return bp end
+        local a = par.Parent
+        while a and a ~= workspace and a ~= game do
+            if a:IsA("BasePart") then return a end
+            if a:IsA("Model") and a.PrimaryPart then return a.PrimaryPart end
+            a = a.Parent
+        end
+        return nil
+    end
+
+    -- forward declaration (table is filled in further down); used so Prompt Range
+    -- can skip hiding places even though it's defined before that table.
+    local HidingPlaces
+    local function isHidingPrompt(p)
+        if p.Name == "HidePrompt" then return true end
+        local par = p.Parent
+        return par ~= nil and HidingPlaces ~= nil and HidingPlaces[par.Name] == true
+    end
+
+    local function applyClip(p, on)
+        if on then
+            if p:GetAttribute("CoraClip") == nil then p:SetAttribute("CoraClip", p.RequiresLineOfSight) end
+            p.RequiresLineOfSight = false
+        else
+            local o = p:GetAttribute("CoraClip")
+            if o ~= nil then p.RequiresLineOfSight = o; p:SetAttribute("CoraClip", nil) end
+        end
+    end
+    local function applyRange(p, on, mult)
+        -- Prompt Range never touches hiding places (lockers/closets). Boosting
+        -- their activation distance is undesirable, so we always leave them at
+        -- their original range (and undo any boost they might still carry).
+        if isHidingPrompt(p) then
+            local o = p:GetAttribute("CoraRange")
+            if o ~= nil then p.MaxActivationDistance = o; p:SetAttribute("CoraRange", nil) end
+            return
+        end
+        if on then
+            if p:GetAttribute("CoraRange") == nil then p:SetAttribute("CoraRange", p.MaxActivationDistance) end
+            p.MaxActivationDistance = (p:GetAttribute("CoraRange") or p.MaxActivationDistance) * mult
+        else
+            local o = p:GetAttribute("CoraRange")
+            if o ~= nil then p.MaxActivationDistance = o; p:SetAttribute("CoraRange", nil) end
+        end
+    end
+    local function applyInstant(p, on)
+        if on then
+            if p:GetAttribute("CoraDur") == nil then p:SetAttribute("CoraDur", p.HoldDuration) end
+            p.HoldDuration = 0
+        else
+            local o = p:GetAttribute("CoraDur")
+            if o ~= nil then p.HoldDuration = o; p:SetAttribute("CoraDur", nil) end
+        end
+    end
+    local function eachPrompt(fn)
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then pcall(fn, v) end
+        end
+    end
+    -- the REAL (server-side) activation distance, ignoring any Prompt Range boost
+    local function realDistance(p)
+        -- when Prompt Range is on, allow Auto Prompt to reach the boosted distance;
+        -- otherwise use the prompt's original activation distance.
+        if Toggles.PromptRange and Toggles.PromptRange.Value then
+            return p.MaxActivationDistance
+        end
+        return p:GetAttribute("CoraRange") or p.MaxActivationDistance
+    end
+
+    local LightSources = {
+        Flashlight = true, Candle = true, Lighter = true, Lantern = true,
+        Bulklight = true, Straplight = true, Shakelight = true,
+        Glowsticks = true, LaserPointer = true,
+    }
+    HidingPlaces = {
+        Wardrobe = true, Rooms_Locker = true, Rooms_Locker_Fridge = true,
+        Locker_Large = true, Backdoor_Wardrobe = true, Bed = true,
+        Double_Bed = true, Toolshed = true, RetroWardrobe = true, CircularVent = true,
+    }
+    local function isIgnored(p)
+        if p.Name == "RevivePrompt" then return true end
+        local ig = Options.AutoPromptIgnore and Options.AutoPromptIgnore.Value
+        if type(ig) ~= "table" then return false end
+        local par = p.Parent
+        local pname = par and par.Name or ""
+        if ig["Gold"] and pname == "GoldPile" then return true end
+        if ig["Jeff Items"] and par and par:GetAttribute("JeffShop") then return true end
+        if ig["Drops"] then
+            local drops = workspace:FindFirstChild("Drops")
+            if drops and p:IsDescendantOf(drops) then return true end
+        end
+        if ig["Glitch Fragment"] and (pname:find("Glitch") or pname:find("Fragment")) then return true end
+        if ig["Paintings"] and pname:find("Painting") then return true end
+        if ig["Light Source Items"] and LightSources[pname] then return true end
+        if ig["Skull Prompts"] and (pname == "SkullLock" or pname:find("Skull")) then return true end
+        if ig["Hiding Places"] and (p.Name == "HidePrompt" or HidingPlaces[pname]) then return true end
+        if ig["Rifts"] and (p.Name == "RiftPrompt" or p.Name == "StarRiftPrompt" or pname:find("Rift")) then return true end
+        -- locked DOORS use Lock / Lock1 / Lock2 padlocks; locked chests & toolboxes
+        -- use ChestBoxLocked / Toolbox_Locked (or a name containing "Chest").
+        if ig["Lockpick Doors"] and (pname == "Lock" or pname == "Lock1" or pname == "Lock2") then return true end
+        if ig["Lockpick Chests"] and (pname == "ChestBoxLocked" or pname == "Toolbox_Locked" or pname:find("Chest")) then return true end
+        return false
+    end
+
+    -- door/lock prompts need a key + can need several tries, so they retry on a
+    -- cooldown instead of fire-once
+    local function isDoorLike(p)
+        local n = (((p.Parent and p.Parent.Name) or "") .. " " .. p.Name):lower()
+        return (n:find("door") or n:find("lock") or n:find("gate")) ~= nil
+    end
+
+    local LockNames = {
+        Lock = true, Lock1 = true, Lock2 = true, SkullLock = true,
+        ChestBoxLocked = true, Toolbox_Locked = true,
+    }
+    local function tryEquipFor(p)
+        local char = LP.Character
+        if not char then return end
+        local par = p.Parent
+        local pname = par and par.Name or ""
+        if not (LockNames[pname] or pname:find("Lock") or pname:find("Key") or pname:find("Door")) then return end
+        if char:FindFirstChild("Key") or char:FindFirstChild("SkeletonKey") or char:FindFirstChild("Lockpick") then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local bp  = LP:FindFirstChild("Backpack")
+        local tool = bp and (bp:FindFirstChild("Key") or bp:FindFirstChild("SkeletonKey") or bp:FindFirstChild("Lockpick"))
+        if tool and hum then pcall(function() hum:EquipTool(tool) end) end
+    end
+
+    local function firePrompt(p)
+        if not p.Enabled then pcall(function() p.Enabled = true end) end
+        if fireprompt then
+            pcall(fireprompt, p)
+        else
+            pcall(function()
+                p:InputHoldBegin()
+                task.wait(p.HoldDuration or 0)
+                p:InputHoldEnd()
+            end)
+        end
+    end
+
+    -- collected prompts + per-prompt fire bookkeeping
+    local interactions = {}
+    local fired = {}     -- pickups/cabinets: fired once until you leave range
+    local cooldown = {}  -- door/lock: last attempt time
+    local function rebuildInteractions()
+        table.clear(interactions)
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then table.insert(interactions, v) end
+        end
+    end
+
+    ----------------------------------------------------------------
+    -- Useful helpers
+    ----------------------------------------------------------------
+    local function getLibraryCode()
+        local gd    = ReplicatedStorage:FindFirstChild("GameData")
+        local floor = gd and gd:FindFirstChild("Floor")
+        local codeLen = (floor and floor.Value == "Fools") and 10 or 5
+        local slot = table.create(codeLen, "_")
+        local paper
+        for _, plr in ipairs(Players:GetPlayers()) do
+            local ch = plr.Character
+            local bp = plr:FindFirstChild("Backpack")
+            paper = (ch and (ch:FindFirstChild("LibraryHintPaper") or ch:FindFirstChild("LibraryHintPaperHard")))
+                 or (bp and (bp:FindFirstChild("LibraryHintPaper") or bp:FindFirstChild("LibraryHintPaperHard")))
+            if paper then break end
+        end
+        if not (paper and paper:FindFirstChild("UI")) then return table.concat(slot) end
+        local pg     = LP:FindFirstChild("PlayerGui")
+        local permUI = pg and pg:FindFirstChild("PermUI")
+        local hintsF = permUI and permUI:FindFirstChild("Hints")
+        if not hintsF then return table.concat(slot) end
+        local hints = hintsF:GetChildren()
+        for _, i in ipairs(paper.UI:GetChildren()) do
+            if i:IsA("ImageLabel") and i.Name ~= "Image" then
+                local pos = tonumber(i.Name)
+                if pos and slot[pos] then
+                    for _, v in ipairs(hints) do
+                        if v.Name == "Icon" and v.ImageRectOffset.X == i.ImageRectOffset.X then
+                            local label = v:FindFirstChild("TextLabel")
+                            if label then slot[pos] = label.Text end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        return table.concat(slot)
+    end
+
+    local function breaker(part)
+        pcall(function()
+            local gui = part:WaitForChild("SurfaceGui", 5)
+            if not gui then return end
+            local codeLabel = gui:WaitForChild("Frame"):WaitForChild("Code")
+            local function run()
+                task.wait(0.05)
+                if not (Toggles.AutoBreaker and Toggles.AutoBreaker.Value) then return end
+                local target = tonumber(codeLabel.Text)
+                if not target then return end
+                for _, v in ipairs(part:GetChildren()) do
+                    if v.Name == "BreakerSwitch" and v:GetAttribute("ID") == target then
+                        local cf    = codeLabel:FindFirstChild("Frame")
+                        local trans = cf and cf.BackgroundTransparency
+                        local pc    = v:FindFirstChild("PrismaticConstraint")
+                        local light = v:FindFirstChild("Light")
+                        local snd   = v:FindFirstChild("Sound")
+                        if trans == 0 then
+                            if v:GetAttribute("Enabled") then return end
+                            v:SetAttribute("Enabled", true)
+                            if pc then pc.TargetPosition = -0.2 end
+                            if light then
+                                light.Material = Enum.Material.Neon
+                                local spark = light:FindFirstChild("Spark", true)
+                                if spark then spark:Emit(1) end
+                            end
+                            if snd then snd:Play() end
+                        elseif trans == 1 then
+                            if not v:GetAttribute("Enabled") then return end
+                            v:SetAttribute("Enabled", false)
+                            if pc then pc.TargetPosition = 0.2 end
+                            if light then light.Material = Enum.Material.Glass end
+                            if snd then snd:Play() end
+                        end
+                        break
+                    end
+                end
+            end
+            codeLabel:GetPropertyChangedSignal("Text"):Connect(run)
+            run()
+        end)
+    end
+
+    ----------------------------------------------------------------
+    -- UI
+    ----------------------------------------------------------------
+    local Movement = MainTab:AddLeftGroupbox("Movement", "footprints")
+    Movement:AddToggle("WalkSpeedEnabled", { Text = "Walk Speed", Default = false })
+    Movement:AddSlider("WalkSpeedValue", { Text = "Walk Speed", Default = 16, Min = 16, Max = 25, Rounding = 0, Disabled = true })
+    Movement:AddToggle("FastStop", { Text = "Fast Stop", Default = false })
+    Movement:AddToggle("SpeedBypass", { Text = "Speed Bypass", Default = false })
+    Movement:AddToggle("Fly", { Text = "Fly", Default = false })
+    Toggles.Fly:AddKeyPicker("FlyKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Fly", NoUI = false })
+    Movement:AddSlider("FlySpeed", { Text = "Fly Speed", Default = 16, Min = 16, Max = 100, Rounding = 0 })
+
+    local Prompts = MainTab:AddRightGroupbox("Prompt Exploits", "zap")
+    Prompts:AddToggle("PromptClip", { Text = "Prompt Clip", Default = false })
+    Prompts:AddToggle("PromptRange", { Text = "Prompt Range", Default = false })
+    Prompts:AddSlider("PromptRangeMult", { Text = "Prompt Range Multiplier", Default = 2, Min = 1.1, Max = 2, Rounding = 1, Suffix = "x", Disabled = true })
+    Prompts:AddToggle("InstantPrompt", { Text = "Instant Prompt", Default = false })
+    Prompts:AddToggle("AutoPrompt", { Text = "Auto Prompt", Default = false })
+    Toggles.AutoPrompt:AddKeyPicker("AutoPromptKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Auto Prompt", NoUI = false })
+    Prompts:AddDropdown("AutoPromptIgnore", {
+        Values  = { "Jeff Items", "Gold", "Drops", "Glitch Fragment",
+                    "Paintings", "Light Source Items", "Skull Prompts", "Hiding Places", "Rifts",
+                    "Lockpick Doors", "Lockpick Chests" },
+        Default = {}, Multi = true, Text = "Auto Prompt Ignore",
     })
-    -- NOTE: the menu toggle key is intentionally NOT set here. It is owned solely
-    -- by the Settings tab's MenuKeybind keypicker (Library.ToggleKeybind =
-    -- Options.MenuKeybind), exactly as the Obsidian Example does. Setting it in
-    -- both places makes two handlers fire on the same key = open+close = no-op.
+    Prompts:AddSlider("AutoPromptInterval", { Text = "Auto Prompt Interval", Default = 0.05, Min = 0, Max = 0.15, Rounding = 2, Suffix = "s" })
 
-    -- Dark background, white accent. Defined as a function so we can
-    -- re-assert it AFTER ThemeManager / config autoload run.
-    local function applyCoraScheme()
+    local Useful = MainTab:AddLeftGroupbox("Useful", "wrench")
+    Useful:AddToggle("Phase", { Text = "Phase", Default = false })
+    Toggles.Phase:AddKeyPicker("PhaseKeybind", { Default = "None", SyncToggleState = true, Mode = "Hold", Text = "Phase", NoUI = false })
+    Useful:AddLabel("Get up to a non full wall and it's recommended to set this as a hold keybind and then just hold, it's slowly going to clip you trough, glitch still has the ability to set you back.", true)
+
+    local Manual = MainTab:AddRightGroupbox("Manual", "hand")
+    Manual:AddButton({ Text = "Kill Self",  Func = killSelf })
+    Manual:AddButton({ Text = "Revive",     Func = reviveSelf })
+    Manual:AddButton({ Text = "Play Again", Func = playAgain })
+    Manual:AddButton({ Text = "Lobby",      Func = lobby })
+
+    local God = MainTab:AddLeftGroupbox("God Mode", "shield")
+    God:AddToggle("GodEnabled", { Text = "Enabled", Default = false })
+    Toggles.GodEnabled:AddKeyPicker("GodKeybind", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "God Mode", NoUI = false })
+    God:AddSlider("GodEntityRange", { Text = "Entity Detection Range", Default = 100, Min = 50, Max = 500, Rounding = 0 })
+
+    ----------------------------------------------------------------
+    -- Toggle effects (state-watcher)
+    ----------------------------------------------------------------
+    watch(tval("WalkSpeedEnabled"), function(v)
+        pcall(function() Options.WalkSpeedValue:SetDisabled(not v) end)
+        if not v and humanoid then humanoid.WalkSpeed = DEFAULT_SPEED end
+    end)
+
+    watch(tval("SpeedBypass"), function(v)
         pcall(function()
-            local S = Library.Scheme
-            S.BackgroundColor = Color3.fromRGB(12, 12, 12)
-            S.MainColor       = Color3.fromRGB(18, 18, 18)
-            S.AccentColor     = Color3.fromRGB(255, 255, 255)
-            S.OutlineColor    = Color3.fromRGB(40, 40, 40)
-            S.FontColor       = Color3.fromRGB(255, 255, 255)
-            if Library.UpdateColorsUsingRegistry then
-                Library:UpdateColorsUsingRegistry()
+            if Options.WalkSpeedValue.SetMax then Options.WalkSpeedValue:SetMax(v and 100 or 25)
+            else Options.WalkSpeedValue.Max = v and 100 or 25 end
+        end)
+        if not v then
+            if Options.WalkSpeedValue.Value > 25 then pcall(function() Options.WalkSpeedValue:SetValue(25) end) end
+            pcall(function()
+                local rf = getRemotes()
+                local crouch = rf and rf:FindFirstChild("Crouch")
+                if crouch then crouch:FireServer(false) end
+            end)
+            pcall(function() if CollisionClone and CollisionClone.Parent then CollisionClone.Massless = false end end)
+        end
+    end)
+
+    watch(tval("Fly"), function(v) flyEnabled = v; if v then startFly() else stopFly() end end)
+
+    watch(tval("PromptClip"), function(v) eachPrompt(function(p) applyClip(p, v) end) end)
+    watch(tval("PromptRange"), function(v)
+        pcall(function() Options.PromptRangeMult:SetDisabled(not v) end)
+        eachPrompt(function(p) applyRange(p, v, Options.PromptRangeMult.Value) end)
+    end)
+    watch(oval("PromptRangeMult"), function(v)
+        if Toggles.PromptRange and Toggles.PromptRange.Value then
+            eachPrompt(function(p) applyRange(p, true, v) end)
+        end
+    end)
+    watch(tval("InstantPrompt"), function(v) eachPrompt(function(p) applyInstant(p, v) end) end)
+
+    watch(tval("AutoPrompt"), function(v)
+        if v then rebuildInteractions() else table.clear(interactions) end
+        table.clear(fired); table.clear(cooldown)
+    end)
+
+    watch(tval("AutoBreaker"), function(v)
+        if not v then return end
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if rooms then
+            for _, b in ipairs(rooms:GetDescendants()) do
+                if b.Name == "ElevatorBreaker" then breaker(b) end
+            end
+        end
+    end)
+
+    ----------------------------------------------------------------
+    -- World connections
+    ----------------------------------------------------------------
+    workspace.DescendantAdded:Connect(function(v)
+        if v:IsA("ProximityPrompt") then
+            task.defer(function()
+                if not v.Parent then return end
+                if Toggles.PromptClip.Value    then pcall(applyClip, v, true) end
+                if Toggles.PromptRange.Value   then pcall(applyRange, v, true, Options.PromptRangeMult.Value) end
+                if Toggles.InstantPrompt.Value then pcall(applyInstant, v, true) end
+                if Toggles.AutoPrompt.Value    then table.insert(interactions, v) end
+            end)
+        elseif v.Name == "ElevatorBreaker" and Toggles.AutoBreaker and Toggles.AutoBreaker.Value then
+            breaker(v)
+        end
+    end)
+    workspace.DescendantRemoving:Connect(function(v)
+        if not v:IsA("ProximityPrompt") then return end
+        fired[v] = nil; cooldown[v] = nil
+        for i = #interactions, 1, -1 do
+            if interactions[i] == v then table.remove(interactions, i); break end
+        end
+    end)
+
+    ----------------------------------------------------------------
+    -- Auto Prompt loop (fires within REAL range; Prompt Range can't break it)
+    ----------------------------------------------------------------
+    local autoTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        if not Toggles.AutoPrompt.Value then return end
+        if LP:GetAttribute("Alive") == false then return end
+        autoTimer += dt
+        if autoTimer < Options.AutoPromptInterval.Value then return end
+        autoTimer = 0
+        local char = LP.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+
+        for i = #interactions, 1, -1 do
+            local p = interactions[i]
+            if not p or not p.Parent then
+                table.remove(interactions, i)
+            else
+                local part = getPromptPart(p)
+                if part then
+                    local dist = (root.Position - part.Position).Magnitude
+                    local reach = realDistance(p)
+                    if dist <= reach and not isIgnored(p) then
+                        if isDoorLike(p) then
+                            -- equip a key, give it a beat to register, then fire; retry on cooldown
+                            if tick() - (cooldown[p] or 0) >= 0.8 then
+                                cooldown[p] = tick()
+                                task.spawn(function()
+                                    tryEquipFor(p)
+                                    task.wait(0.2)
+                                    if Toggles.AutoPrompt.Value and p.Parent then firePrompt(p) end
+                                end)
+                            end
+                        elseif not fired[p] then
+                            fired[p] = true
+                            firePrompt(p)
+                        end
+                    elseif dist > reach then
+                        fired[p] = nil -- left range; allow it to fire again next time
+                    end
+                end
+            end
+        end
+    end)
+
+    ----------------------------------------------------------------
+    -- Runtime loops
+    ----------------------------------------------------------------
+    RunService.Heartbeat:Connect(function()
+        if humanoid and Toggles.WalkSpeedEnabled.Value then
+            if humanoid.WalkSpeed ~= Options.WalkSpeedValue.Value then
+                humanoid.WalkSpeed = Options.WalkSpeedValue.Value
+            end
+        end
+    end)
+
+    -- God Mode: while Enabled, god mode applies only when an entity is within the
+    -- Entity Detection Range (so you're not god 24/7, which can lagback).
+    local godNear = false
+    local godTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        local want = false
+        if Toggles.GodEnabled.Value then
+            godTimer += dt
+            if godTimer >= 0.35 then
+                godTimer = 0
+                godNear = entityNear(Options.GodEntityRange.Value)
+            end
+            want = godNear
+        else
+            godNear = false
+        end
+
+        if want and not godApplied then
+            godApplied = true
+            godEnable()
+        elseif not want and godApplied then
+            godApplied = false
+            godDisable()
+        end
+
+        if godApplied then godEnforce() end
+    end)
+
+    task.spawn(function()
+        while true do
+            task.wait()
+            if Library.Unloaded then break end
+            pcall(function()
+                if not Toggles.SpeedBypass.Value then return end
+                if not (character and character.Parent) then return end
+                if LP:GetAttribute("Alive") == false then return end
+                ensureCollisionClone()
+                if CollisionClone and CollisionClone.Parent then CollisionClone.Massless = true end
+                local rf = getRemotes()
+                local crouch = rf and rf:FindFirstChild("Crouch")
+                if crouch then crouch:FireServer(true, true) end
+            end)
+        end
+    end)
+
+    -- Fast Stop: kill movement momentum entirely. Runs on Heartbeat (AFTER the
+    -- physics step) so the Humanoid's controller can't re-apply deceleration
+    -- after us (that was the old bug: RenderStepped ran BEFORE physics, so you
+    -- kept sliding). No input -> horizontal velocity snaps to 0 (instant stop);
+    -- input -> snaps straight to WalkSpeed in that direction (no acceleration
+    -- ramp). Y velocity is preserved so gravity/jumping still work, and it's
+    -- skipped while climbing so vents/ladders aren't broken.
+    RunService.Heartbeat:Connect(function()
+        if flyEnabled then return end
+        if not (Toggles.FastStop and Toggles.FastStop.Value) then return end
+        if not (humanoid and hrp and humanoid.Parent) then return end
+        if humanoid:GetState() == Enum.HumanoidStateType.Climbing then return end
+        local v       = hrp.AssemblyLinearVelocity
+        local moveDir = humanoid.MoveDirection
+        if moveDir.Magnitude == 0 then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+        else
+            local target = moveDir * humanoid.WalkSpeed
+            hrp.AssemblyLinearVelocity = Vector3.new(target.X, v.Y, target.Z)
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        if flyEnabled and flyBV and hrp then
+            local cam = workspace.CurrentCamera
+            local dir = Vector3.zero
+            if UserInputService:IsKeyDown(Enum.KeyCode.W)           then dir += cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S)           then dir -= cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A)           then dir -= cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D)           then dir += cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space)       then dir += Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0, 1, 0) end
+            if dir.Magnitude > 0 then dir = dir.Unit end
+            flyBV.Velocity = dir * Options.FlySpeed.Value
+        end
+    end)
+
+    local libTimer = 0
+    RunService.Heartbeat:Connect(function(dt)
+        if not (Toggles.AutoSolveLibrary and Toggles.AutoSolveLibrary.Value) then return end
+        libTimer += dt
+        if libTimer < 0.4 then return end
+        libTimer = 0
+        pcall(function()
+            local gd     = ReplicatedStorage:FindFirstChild("GameData")
+            local latest = gd and gd:FindFirstChild("LatestRoom")
+            if not latest or latest.Value ~= 50 then return end
+            local code = getLibraryCode()
+            if not code or code:find("_") then return end
+            local char = LP.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            local near = true
+            local rooms = workspace:FindFirstChild("CurrentRooms")
+            local room50 = rooms and rooms:FindFirstChild("50")
+            local door = room50 and room50:FindFirstChild("Door")
+            local doorPart = door and door:FindFirstChild("Door")
+            if doorPart then near = (root.Position - doorPart.Position).Magnitude < 35 end
+            if near then
+                local rf = getRemotes()
+                local PL = rf and rf:FindFirstChild("PL")
+                if PL then PL:FireServer(code) end
             end
         end)
-    end
-    applyCoraScheme()
+    end)
 
-    -- Share objects with other modules
-    Cora.Library      = Library
-    Cora.ThemeManager = ThemeManager
-    Cora.SaveManager  = SaveManager
-    Cora.Window       = Window
-    Cora.Tabs         = {}
-
-    ThemeManager:SetLibrary(Library)
-    SaveManager:SetLibrary(Library)
-    SaveManager:IgnoreThemeSettings()
-    SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-    -- Themes in the global "Cora" folder; configs in a separate subfolder.
-    ThemeManager:SetFolder("Cora")
-    SaveManager:SetFolder("Cora/doors")
-
-    -- Register the unload handle NOW (right after the window exists), so the
-    -- single-instance guard works even if a tab errors while loading.
-    if getgenv then
-        -- Liveness marker we fully control: it shares the window's lifetime and,
-        -- crucially, is destroyed by a place teleport. The guard at the top uses
-        -- it to tell "already loaded here" apart from "stale globals left over
-        -- after teleporting into a sub-place like The Rooms".
+    -- Phase (Supreme's "Manipulation"/Velocity method): noclip + a gentle forward
+    -- push so you slowly clip through a wall. Best used on a Hold keybind.
+    watch(tval("Phase"), function(v)
+        if v then return end
+        local char = LP.Character
+        if not char then return end
+        for _, p in ipairs(char:GetChildren()) do
+            if p:IsA("BasePart") and p.Name ~= "CollisionClone" and p.Name ~= "Collision" and not p.CanCollide then
+                p.CanCollide = true
+            end
+        end
+        local col = char:FindFirstChild("Collision")
+        if col then
+            col.CanCollide = (col.CollisionGroup ~= "PlayerCrouching")
+            local cc = col:FindFirstChild("CollisionCrouch")
+            if cc then cc.CanCollide = col.CanCollide end
+        end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local bv = hrp and hrp:FindFirstChild("CoraPhaseVelocity")
+        if bv then bv:Destroy() end
+    end)
+    RunService.Heartbeat:Connect(function()
         pcall(function()
-            local old = getgenv().CoraMarker
-            if old then old:Destroy() end
+            if not (Toggles.Phase and Toggles.Phase.Value) then return end
+            local char = LP.Character
+            local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            for _, p in ipairs(char:GetChildren()) do
+                if p:IsA("BasePart") and p.Name ~= "CollisionClone" and p.CanCollide then p.CanCollide = false end
+            end
+            local col = char:FindFirstChild("Collision")
+            if col then
+                col.CanCollide = false
+                local cc = col:FindFirstChild("CollisionCrouch")
+                if cc then cc.CanCollide = false end
+            end
+            local bv = hrp:FindFirstChild("CoraPhaseVelocity")
+            if not bv then
+                bv = Instance.new("BodyVelocity")
+                bv.Name = "CoraPhaseVelocity"
+                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                bv.Parent = hrp
+            end
+            local lv = hrp.CFrame.LookVector * 2
+            bv.Velocity = Vector3.new(lv.X, lv.Y, lv.Z)
         end)
-        local marker = Instance.new("ScreenGui")
-        marker.Name         = "CoraMarker"
-        marker.ResetOnSpawn = false
-        pcall(function() marker.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
-        getgenv().CoraMarker = marker
+    end)
 
-        getgenv().CoraLoaded = true
-        getgenv().CoraShow = function()
-            pcall(function() Library:Notify("Cora is already loaded.", 4) end)
-            pcall(function() Library.Toggled = true end)
-        end
-        getgenv().CoraUnload = function()
-            pcall(function() Library:Unload() end)
-            pcall(function()
-                local pg = LP:FindFirstChild("PlayerGui")
-                local kg = pg and pg:FindFirstChild("CoraKeySystem")
-                if kg then kg:Destroy() end
-            end)
-            pcall(function() if getgenv().CoraMarker then getgenv().CoraMarker:Destroy() end end)
-            getgenv().CoraMarker = nil
-            getgenv().CoraUnload = nil
-            getgenv().CoraLoaded = nil
-            getgenv().CoraShow   = nil
-        end
-    end
-
-    -- Load each tab in isolation. If one tab errors it must NOT stop the others
-    -- (this is why Settings stopped loading before), and the real error is shown.
-    local function loadTab(file)
-        local ok, err = pcall(function() Cora.fetch(file)()(Cora) end)
-        if not ok then
-            warn("[Cora] tab '" .. file .. "' failed: " .. tostring(err))
-            pcall(function()
-                Library:Notify("[Cora] " .. file .. " error: " .. tostring(err), 8)
-            end)
+    -- Auto Heartbeat: hook __namecall ONCE per session. Re-running the script must
+    -- NOT add another hook - stacked hooks each call the previous one, and because
+    -- DOORS fires FireServer constantly, the chain recurses until the stack
+    -- overflows (the "Line 743" spam). The single persistent hook reads a global
+    -- flag that we keep in sync with the toggle, so reloads never re-hook.
+    watch(tval("AutoHeartbeat"), function(v)
+        if getgenv then getgenv().CoraAutoHB = v end
+    end)
+    -- The decision logic lives in a global that we REASSIGN on every run, while the
+    -- actual metamethod hook is installed only once per session. That way updating
+    -- Cora (e.g. adding Anti Screech) takes effect on a normal re-run instead of
+    -- requiring a rejoin to replace a baked-in hook closure. Returns:
+    --   "heartbeat" -> force-win the heartbeat minigame
+    --   "block"     -> drop the call entirely (Anti Screech)
+    if getgenv then
+        getgenv().CoraNamecall = function(self, method)
+            if method ~= "FireServer" then return end
+            local ok, nm = pcall(function() return self.Name end)
+            if not ok then return end
+            if getgenv().CoraAutoHB and nm == "ClutchHeartbeat" then return "heartbeat" end
+            if getgenv().CoraBlockScreech and nm == "Screech" then return "block" end
         end
     end
-    -- DOORS tabs (in the /doors folder) + the shared settings.lua (repo root).
-    loadTab("doors/maintab.lua")
-    loadTab("doors/antitab.lua")
-    loadTab("doors/floortab.lua")
-    loadTab("doors/visualstab.lua")
-    loadTab("settings.lua")
-
-    -- Autoload config, then re-assert the white accent so it wins. ThemeManager
-    -- applies its own default theme (a purple accent) on a DEFERRED frame when the
-    -- Settings tab builds, which lands after this point — so we re-assert Cora's
-    -- scheme on the next frame (and once more shortly after as a safety net) to
-    -- override it. These run once at load, so the user can still pick another
-    -- theme afterward and it will stick.
-    pcall(function() SaveManager:LoadAutoloadConfig() end)
-    applyCoraScheme()
-    task.defer(applyCoraScheme)
-    task.delay(0.25, applyCoraScheme)
+    if hookmetamethod and getnamecallmethod and getgenv and not getgenv().CoraHBHooked then
+        getgenv().CoraHBHooked = true
+        local old
+        old = hookmetamethod(game, "__namecall", function(self, ...)
+            local handler = getgenv().CoraNamecall
+            if handler then
+                local action
+                local ok = pcall(function() action = handler(self, getnamecallmethod()) end)
+                if ok then
+                    if action == "heartbeat" then return old(self, true) end
+                    if action == "block" then return end
+                end
+            end
+            return old(self, ...)
+        end)
+    end
 end
