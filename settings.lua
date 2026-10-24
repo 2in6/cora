@@ -1,1 +1,72 @@
-return(function(...)local O={"3eN0bLIanRERlLWza","39Wvsw5x6RWM=","305u2RNGaeN0bLIanRh==";"bC:KRM*TF2biPP=l","bQV","bX(\\/t)UV3","3fJan","bC:KR&#8UuI";"bJBQi2ica1";"3wW0n/CPaUW1HoI9=","39NuMUecErYDFoJ1skEGHoIB=","3CNqO/lcVRYa6rWbskEzao2C=";"b%_";"bS+8A5WJ1K>ic\"U";"39WvseN0bC5aFrN0l";"3050S/h==";"bJV";"bs:3;gi.I","39WvsCIa2r3v3fIuzf51OUh==","bC:KRqWoeE3W\'eF0)e","39NulLeh=";"3eN0bLIanREzao20Xf50n";"3C5GqUCbO/5aICNuzoI9=";"bCi5=^#8\\]kWSe8";"b_kC/^WJ#","3Yzu2LM==","3/J1H/50KLNGHf51OLY1s","3wIu0e9==","3/Wqz0WqmL2RDrCGQeCB=","bCYINeW03","3CNxNRCzqoIx2RYk=";"b_kCZfCYggiiX";"b$5)Lt";"b_(pD\\W1\'t?","b$;\\lAWS7A";"3WEfj9jP9r0R98YfM";"bSt=ATWAc\"","3wIujrWRb";"3f5Dqo5M=";"b-itbI)UVJ:";"3oW0n/9==";"39Wvsv5aNrWvafg==","3v50ILY0B/h==";"bQ79qXiNY$^)5q?#Uor","bs:b_-)r%u6W9b(Q";"3oW0ZfNx2RezFrY1Fo5C=","30WbBoNxs";"3v5aZLNulR+cmrWb7kEDOf5aaR+cjolcio5aMLIuqfI9q";"bS-a_\'";"3YzuBRWS=";"30I0lfNaOog==";"3wW0n/ec7RYa6rWbs";"3v20nLM==","39Wvs05u2RNGa";"b*\\ZB+L:DMV_&Qb.+nh","3v5aZLNulRh==";"b_XuOn)4:$<)GtfA)uc.oice","385aiRCzR0C08rWPDvh==";"bCi8`ji6UMl";"38EG0/3clCJx1UxRX";"39YcMo3aCozvqLg==";"305qaoW0DLWbqRN0l","b_kC/k)r7Hr![_IjW\'7>";"b#<rX&Cq5l7)&7^@ic\")W#425.#diVXS+CBuSS","b,DJ`f#8UuI"}for L,Q in ipairs({{1;65},{1,24};{25,65}})do while Q[1]<Q[2]do O[Q[1]],O[Q[2]],Q[1],Q[2]=O[Q[2]],O[Q[1]],Q[1]+1,Q[2]-1 end end local function L(L)return O[L+894]end do local L=string.sub local Q={P=67,[","]=26;["^"]=9,["1"]=52;H=3;["7"]=12;["5"]=74;j=29;[")"]=32;["0"]=80;S=27,e=11;F=58,N=14;U=22;["\""]=51;g=62,["<"]=48;C=37,n=56,_=21,A=53;s=28;["*"]=34;Y=63;["="]=57,["/"]=44,c=69;r=50;X=30;["%"]=20;q=2;d=17;["4"]=19,f=76;O=0,R=39;l=82;i=35;a=15;["`"]=5;B=45;["?"]=61,[">"]=41;["!"]=36,k=1;["9"]=78;["3"]=84,["#"]=33;T=71,L=18,Z=43;["&"]=23;t=65;m=4,["6"]=13;E=73;M=6;["8"]=75,Q=16;[":"]=7;p=64;b=83,["]"]=46;D=68,u=49;["2"]=72,["$"]=24,J=25;["."]=70;V=60,["\'"]=54;["+"]=38,[";"]=47,h=59,["["]=66;["\\"]=40;["-"]=10;W=31,K=42;["@"]=79;I=8;G=77;o=81,["("]=55}local v=O local p=string.char local C=math.floor local w=table.insert local u=string.len local i=table.concat local c={N=54;I=38;G=49;["6"]=34;f=28,O=47,R=25;C=20;v=17,n=46;W=22;["5"]=6;g=32,z=53,P=45,b=57;Q=42;A=59,e=18;D=13,s=36;X=15,E=4,B=44;["8"]=14,["0"]=21,h=0,o=27,V=11;i=3;a=37;K=31;k=8;Z=51,M=48,p=63,["3"]=7;["9"]=16,["4"]=62,J=55,u=61,H=41,m=12;["2"]=39,c=1,["7"]=43,["+"]=2;L=24;j=52,r=26;y=58,Y=23,w=19;U=30,t=60;q=33,d=10;F=35,S=56,["/"]=29,T=40;["1"]=9;x=5,l=50}local l=type for O=1,#v,1 do local h=v[O]if l(h)=="string"then local l=L(h,1,1)if l=="3"then h=L(h,2)local Q=u(h)local l={}local M=1 local Y=0 local V=0 while M<=Q do local O=L(h,M,M)local v=c[O]if v then Y=Y+v*(64^((3-V)))V=V+1 if V==4 then V=0 local O=C(Y/65536)local L=C((Y%65536)/256)local Q=Y%256 w(l,p(O,L,Q))Y=0 end elseif O=="="then w(l,p(C(Y/65536)))if M>=Q or L(h,M+1,M+1)~="="then w(l,p(C((Y%65536)/256)))end break end M=M+1 end v[O]=i(l)elseif l=="b"then h=L(h,2)local c=u(h)local l={}local M=1 while M<=c do local O=(c-M)+1 local v=O>=5 and 5 or O local u=0 local i=v>1 for O=0,4,1 do local p if O<v then local v=L(h,M+O,M+O)p=Q[v]if not p then i=false break end else p=84 end u=u*85+p end if i then local O=C(u/16777216)%256 local L=C(u/65536)%256 local Q=C(u/256)%256 local i=u%256 if v==5 then w(l,p(O,L,Q,i))elseif v==4 then w(l,p(O,L,Q))elseif v==3 then w(l,p(O,L))elseif v==2 then w(l,p(O))end end M=M+v end v[O]=i(l)end end end end return(function(O,v,w,C,p,u,i,m,Y,g,c,Q,M,Z,N,d,l,V,G,E,h)m,h,G,V,N,Z,d,M,Y,l,g,c,E,Q=function(O,L)local v=Y(L)local p=function(p,C)return Q(O,{p;C},L,v)end return p end,function()M=M+1 l[M]=1 return M end,function(O,L)local v=Y(L)local p=function(...)return Q(O,{...},L,v)end return p end,function(O)local L,Q=1,O[1]while Q do l[Q],L=l[Q]-1,L+1 if 0==l[Q]then l[Q],c[Q]=nil,nil end Q=O[L]end end,function(O,L)local v=Y(L)local p=function(p,C,w,u,i,c)return Q(O,{p,C;w;u;i;c},L,v)end return p end,function(O)l[O]=l[O]-1 if l[O]==0 then l[O],c[O]=nil,nil end end,function(O,L)local v=Y(L)local p=function(p)return Q(O,{p},L,v)end return p end,0,function(O)for L=1,#O,1 do l[O[L]]=1+l[O[L]]end if p then local Q=p(true)local v=w(Q)v[L(-864)],v[L(-844)],v[L(-885)]=O,V,function()return 2413685 end return Q else return C({},{[L(-844)]=V,[L(-864)]=O,[L(-885)]=function()return 2413685 end})end end,{},function(O,L)local v=Y(L)local p=function(p,C,w,u,i)return Q(O,{p;C,w,u,i},L,v)end return p end,{},function(O,L)local v=Y(L)local p=function()return Q(O,{},L,v)end return p end,function(Q,p,C,w)local Y,s,V,X,H,G,M,l,J,r,e,o,q,n,j,y,i,t,B while Q do if Q>9187682 then if 11309860>Q then if Q>10044560 then if 10377140>Q then Q=Y Q,i=14470084,M else l,i,Q=nil,{},O[L(-834)]end else if 9437190>Q then Q=c[C[1]]l=c[C[2]]i=Q(l)Q=8987887 elseif 9735788>Q then l,M=p[1],L(-869)i=c[C[1]]Q=i[M]Q=Q and 16267251 or 10649834 else n=L(-863)e=O[n]n=L(-843)j=e[n]Q,X=15641047,j end end else if 15055565>Q then if Q<12030439 then G,Y=L(-846),Q V=O[G]Q,M=V and 10104446 or 3598751,V elseif 13280538>Q then Q=c[C[1]]i=L(-888)i=Q[i]i=i(Q)Q,i=O[L(-890)],{}else M=h()c[M]=i i=L(-831)Q=O[i]Y=d(3512760,{M,l})i=Q(Y)Y=g(371657,{C[1];C[2]})i=L(-831)Q=O[i]i=Q(Y)Y=L(-847)i=c[C[3]]Q=i[Y]Q=Q and 1412195 or 1776568 end else if 15954149>Q then V,Q=X,s Q=X and 3306457 or 6817372 else i=c[C[1]]M=L(-869)Q=i[M]M,i=l,L(-833)Q[i]=M Q=10649834 end end end else if 3555755>Q then if Q<1873705 then if 891926>Q then i,l=L(-832),L(-887)Q=c[C[1]]M=c[C[2]]i=Q[i]i=i(Q,l,M)Q,i=O[L(-877)],{}elseif Q<1594381 then i,G=L(-831),L(-847)Q=O[i]V=c[C[3]]Y=V[G]i=Q(Y)Q=1776568 else l=Z(l)M=Z(M)i,Q={},O[L(-841)]end else if 2638649>Q then Y=L(-866)l=h()Q=L(-871)c[l]=Q M=O[Y]i,Q=M,M and 14470084 or 11969886 elseif 3409608>Q then M,Q=V,G Q=10104446 else Q=c[C[1]]Q=Q and 9387477 or 8987887 end end else if Q>7356924 then if 8442181>Q then l=h()G,J=L(-852),L(-854)c[l]=p[1]i=c[l]M,Y=L(-835),L(-873)Q=i[M]s=L(-862)M=h()r=L(-858)c[M]=Q i=c[l]Q=i[Y]i=c[l]Y,j,V=Q,L(-886),L(-839)Q=i[V]V,X=Q,L(-861)i=c[l]Q=i[G]G=Q i=c[M]Q=i[X]X,o,e=Q,L(-836),L(-829)Q=L(-845)Q,i=G[Q],L(-870)Q=Q(G,i,s)s=Q i=c[l]Q=i[j]y,i,j,q=1285534>15590033,L(-870),s,L(-884)Q[i]=j t=N(9486903,{M})i,H,j=L(-876),L(-892),L(-865)Q=O[i]i=Q(j)j=h()c[j]=i n,B,i,Q={[J]=r,[H]=y;[o]=t},L(-883),L(-837),L(-872)r,H,y,Q=L(-892),L(-853),L(-842),s[Q]Q=Q(s,i,e)e=Q Q=L(-881)Q,i,t=e[Q],L(-848),L(-854)Q=Q(e,i,n)Q,i=L(-893),L(-883)Q,n=e[Q],L(-860)Q=Q(e)Q,o=L(-868),12124503>=7547320 J={[r]=H;[y]=o;[t]=B}r,Q=L(-882),e[Q]Q=Q(e,i)i=L(-855)i=Q[i]i=i(Q,n,J)Q,J,n=L(-838),L(-856),L(-854)Q=e[Q]H=m(12090992,{M})i={[n]=J;[r]=H}Q=Q(e,i)J,i=L(-860),L(-867)Q=c[M]n=X[J]Q[i]=n Q,n,i=L(-851),L(-889),L(-879)Q=s[Q]J=E(1970842,{M;j;l})r=L(-849)Q=Q(s,i,n)n,G=Q,nil Q,e=L(-838),nil Q,i=n[Q],L(-859)Q=Q(n,i,J)Q=L(-878)Q=V[Q]Q=Q(V,s)Q=L(-874)Q=Y[Q]Q=Q(Y,s)i=L(-832)Q=c[M]n,o=nil,Q o=L(-830)B=c[l]M=Z(M)t=B[q]B,s,X=L(-857),nil,nil y=t or B H=y..o J=r..H V,i=nil,Q[i]r=c[j]Y=nil i=i(Q,J,r)l=Z(l)j=Z(j)Q,i=O[L(-891)],{}else i,Q={},O[L(-880)]end else if 4120812>Q then s,e=Q,L(-863)j=O[e]G=Q Q,X=j and 9984674 or 15641047,j elseif Q<5730122 then l=p Q=N(7896476,{})i={Q}Q=O[L(-875)]else s,Q=L(-850),3306457 X=O[s]V=X end end end end end Q=#w return v(i)end return(G(4642873,{}))(v(i))end)(getfenv and getfenv()or _ENV,unpack or table[L(-840)],getmetatable,setmetatable,newproxy,select,{...})end)(...)
+--[[
+    Cora • Settings tab
+    Sections: Theme (dark/white) • Menu keybind (default P) • Configuration
+--]]
+
+return function(Cora)
+    local Library      = Cora.Library
+    local ThemeManager = Cora.ThemeManager
+    local SaveManager  = Cora.SaveManager
+    local Window       = Cora.Window
+    local Options      = Library.Options
+    local Toggles      = Library.Toggles
+
+    local SettingsTab = Window:AddTab("Settings", "settings")
+    Cora.Tabs.Settings = SettingsTab
+
+    -- notify duration kept as a non-literal so number-obfuscation passes don't choke
+    local NOTIF = tonumber("4")
+
+    -- ── Menu / keybind section ──────────────────────────────
+    local MenuGroup = SettingsTab:AddLeftGroupbox("Menu", "menu")
+
+    MenuGroup:AddToggle("KeybindMenuOpen", {
+        Text    = "Show Keybind Menu",
+        Default = false,
+        Callback = function(value)
+            if Library.KeybindFrame then
+                Library.KeybindFrame.Visible = value
+            end
+        end,
+    })
+
+    MenuGroup:AddDivider()
+
+    MenuGroup:AddLabel("Menu keybind"):AddKeyPicker("MenuKeybind", {
+        Default = "P",
+        NoUI    = true,
+        Text    = "Menu keybind",
+    })
+
+    MenuGroup:AddButton({
+        Text = "Unload Cora",
+        Func = function()
+            Library:Unload()
+        end,
+    })
+
+    -- Route the window toggle through the editable keypicker (set AFTER the
+    -- button, exactly like the Obsidian Example).
+    Library.ToggleKeybind = Options.MenuKeybind
+
+    -- ── Discord section ─────────────────────────────────────
+    local DiscordGroup = SettingsTab:AddRightGroupbox("Discord", "message-circle")
+    DiscordGroup:AddButton("Copy Discord Link", function()
+        local link = "https://discord.gg/HgPXcUj98U"
+        local copier = setclipboard or toclipboard or (syn and syn.write_clipboard) or set_clipboard
+        pcall(function() if copier then copier(link) end end)
+        pcall(function() Library:Notify("Discord Link Copied to Clipboard!", NOTIF) end)
+        if Cora.PlayNotifSound then pcall(Cora.PlayNotifSound) end
+    end)
+
+    -- ── Configuration section ───────────────────────────────
+    -- Create / overwrite / load / delete / autoload configs.
+    -- Built BEFORE the theme picker, matching the Obsidian Example order.
+    SaveManager:BuildConfigSection(SettingsTab)
+
+    -- ── Theme section (dark / white) ────────────────────────
+    -- Builds the full theme picker (presets, custom colours, save/load)
+    ThemeManager:ApplyToTab(SettingsTab)
+
+    Library:Notify("Cora " .. (Cora.Version or "?") .. " loaded.", NOTIF)
+end
