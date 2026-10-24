@@ -1,1 +1,73 @@
-return(function(...)local o={">bgBE1/+dXs==",",QJB-K",",5u;q9J!L1l$sNXp$a",",]\"=t5]A;?_H\"";">OCHr6nQhX45TmmQgqQZ=",",U4#?uJ&-5cH9iW)";">PCdj5/d8PQwnXA6gO7==";",c$]0u";">PJ+tcZ5d5s==",">bgBR02i=";">TQMXogtuTPz=";",]A;[&;u";",)oH45;/KE8",">0bwU1C3=";">xCzB";",)H";",dErM6ltb8MJB#eH",">12Qh5LmU",">lbHWlbwh",">0/mtOk7=",",ltc@Kd:s=",",-$S$\'sU=oA5(Z:YX5LX-X5Y-i;Hlc",">5r7h4gOicrQhPdQtKz==";",d+3QJ]h=OM877G8d#\"Ik]e(4f;a5`o544uM]$0\\;5P,<nHMTNKMkPeC8*",">5kQU17==";">cC+Ul2DA",",8;<Q^fnh0@5pM_E>d?";">OkBUOz==";">1LBW0LmUo/8gOz==";",H\"";",Q?I>^";",r<rn7";",]80E`";",SN6",",-$S$\'sU=o]s@HBE;H-L!XA(-Y8XOM_XU",",f+>Diu_\\d$dr_/VulP",",]\"=t5",">2t6Fc/Q53ZMdXPHN1Cz75/mUl20E02zN3ZQa1Cwtl2DAo7==";">2t6Fc/Q53QwdcL971/Bt3L0F52DI3LBN3LwUO2DrlLmh3s==";",5))M*",",8XllKA1";",AMLk]$5H\'f`\'qH1;%$",",]5#ch";",]T=^MG9[",",A9l.K]i\">`5Vm",">wUHW1AdClLmU0PHE1aHtlLK7c/mS1Us=";",U:]*(l5:4";">lJ+tcJGeoUBUObcN0kdtlJma5b6dc/6F1A+d1AzNOkBMoUmhoUmhoUmhoS==";",Gpi%&;/(4L;6C\\K]oX6S;4g*f]P(Y0X8n28d#\"Ik]eCT#5(WM";",]5:#d8ta8P",",;Z5eYsl@";",A\'0,!uh6P$5P1?IsG";">lJ+tcJGeoUBEo/daOaDr1UBZ+ZOiOISgKPBa02+tl2gdo4ZSGnHIcjgQGUgQGUgQGUgLPK8GGjgC0kWt6nsSoK5PzKzSo2BScCytqjDS1/c=";">12QtOk7=",",d!#?p",">4/Bt3Z0F52DI";",5))M*GZ#N$";">OkBNOkQt";">52DSO26u";",GH]"}local function O(O)return o[O+62507]end for O,T in ipairs({{1,60},{1;23},{24;60}})do while T[1]<T[2]do o[T[1]],o[T[2]],T[1],T[2]=o[T[2]],o[T[1]],T[1]+1,T[2]-1 end end do local O=math.floor local T=table.concat local X=string.sub local k={I=40,C=66,["#"]=20;Y=11,["^"]=52,b=47,["%"]=44;V=41,["4"]=42,["\\"]=6,o=0,["["]=54,Z=78,[";"]=32,P=7;["&"]=79;Q=30,f=22,E=71;["6"]=77,S=18;G=14,L=84;["("]=69,F=73;R=62;A=34;["?"]=55;a=51;d=33,["."]=63;["\""]=8;B=46,u=39;H=15,["-"]=29,K=76;["$"]=28,g=56,["8"]=36;[")"]=13;T=83,n=53;c=21;[">"]=38,J=23;D=58,["/"]=49,N=57,[":"]=75;["="]=74;j=68,q=59;["+"]=48,M=12,O=82,["]"]=37;X=10,l=27,["7"]=64,h=2,U=24,r=16;p=70;["1"]=60,["`"]=25;["@"]=26;m=5,["\'"]=43;["0"]=80;["*"]=81,_=1;["<"]=17,["9"]=72;["5"]=35,W=4,s=31,["3"]=50;["!"]=19,k=3;i=9;[","]=67;e=61,t=65;["2"]=45}local g=table.insert local D=string.len local s=o local b={r=35;I=36,V=59;b=23;G=12;["2"]=22;H=1,M=45,["8"]=49,S=48;F=47,l=26,P=18;q=14;t=52,R=44,g=53;m=21;v=62,W=33;j=2;N=46;["5"]=29,D=57;c=28;u=43;["6"]=13,T=10;["+"]=17;k=54,O=24,U=50;y=40;L=6,n=3;a=34,["9"]=60;z=16;Z=4,J=7;["0"]=25;d=37,h=51;i=56,["7"]=32,Y=31;C=55,E=41,A=39;["1"]=27,["/"]=38,["3"]=8;o=11;X=30;Q=5,["4"]=19;x=15,f=63,K=20;B=61;w=9,e=58;p=42,s=0}local v=string.char local x=type for o=1,#s,1 do local q=s[o]if x(q)=="string"then local x=X(q,1,1)if x==">"then q=X(q,2)local k=D(q)local x={}local L=1 local C=0 local w=0 while L<=k do local o=X(q,L,L)local T=b[o]if T then C=C+T*(64^((3-w)))w=w+1 if w==4 then w=0 local o=O(C/65536)local T=O((C%65536)/256)local X=C%256 g(x,v(o,T,X))C=0 end elseif o=="="then g(x,v(O(C/65536)))if L>=k or X(q,L+1,L+1)~="="then g(x,v(O((C%65536)/256)))end break end L=L+1 end s[o]=T(x)elseif x==","then q=X(q,2)local b=D(q)local x={}local L=1 while L<=b do local o=(b-L)+1 local T=o>=5 and 5 or o local D=0 local s=T>1 for o=0,4,1 do local O if o<T then local T=X(q,L+o,L+o)O=k[T]if not O then s=false break end else O=84 end D=D*85+O end if s then local o=O(D/16777216)%256 local X=O(D/65536)%256 local k=O(D/256)%256 local s=D%256 if T==5 then g(x,v(o,X,k,s))elseif T==4 then g(x,v(o,X,k))elseif T==3 then g(x,v(o,X))elseif T==2 then g(x,v(o))end end L=L+T end s[o]=T(x)end end end end return(function(b,D,X,k,g,o,s,Q,q,T,E,d,y,L,w,Y,W,x,v,C,e)Q,e,x,q,W,d,v,L,C,Y,E,T,y,w=function(o,O)local X=C(O)local k=function(k,g,D,s)return T(o,{k;g;D,s},O,X)end return k end,function(o,O)local X=C(O)local k=function(k,g,D,s,b)return T(o,{k,g;D,s,b},O,X)end return k end,{},function()L=1+L x[L]=1 return L end,function(o,O)local X=C(O)local k=function(k,g)return T(o,{k;g},O,X)end return k end,function(o,O)local X=C(O)local k=function(...)return T(o,{...},O,X)end return k end,{},0,function(o)for O=1,#o,1 do x[o[O]]=x[o[O]]+1 end if k then local T=k(true)local X=D(T)X[O(-62483)],X[O(-62453)],X[O(-62474)]=o,w,function()return 101739 end return T else return g({},{[O(-62453)]=w;[O(-62483)]=o;[O(-62474)]=function()return 101739 end})end end,function(o,O)local X=C(O)local k=function(k,g,D)return T(o,{k;g,D},O,X)end return k end,function(o,O)local X=C(O)local k=function(k)return T(o,{k},O,X)end return k end,function(T,k,g,D)local j,U,J,L,d,R,b,H,a,i,z,h,G,x,C,V,Z,r,N,w,M,A while T do if 8552257>T then if 5398763>T then if 3129055>T then if 1979979>T then if 1245430>T then R,d,a=O(-62482),T,O(-62490)a=x[a]a=a(x,R)R=nil J=a~=R w,T=J,J and 2156435 or 5614551 elseif 1752843>T then b,T={L},o[O(-62478)]else d=O(-62499)w=o[d]a={w(L)}d,J=a[1],a[2]w=not d T=w and 11155345 or 8519459 end else if 2536214>T then L,T=w,d T=7991343 else Z=v[R]i=not Z T=i and 5225315 or 8348756 end end else if 5201941>T then if 3865883>T then j,T,b,z=O(-62459),o[O(-62448)],{},O(-62506)N=o[j]j=N(z)elseif T<4784108 then T,x,Z,i=O(-62490),k[1],O(-62480),O(-62447)T,b=x[T],O(-62473)T=T(x,b)b,L={},T T,w={},b b,C=O(-62465),T T=o[b]R=i..L i=Z..L a={x,L,R;i}R={T(a)}b,T,d,J=R[1],8714124,R[2],R[3]a=b else x,T=k,O(-62452)L=q()v[L]=T w,b=O(-62466),O(-62504)R=q()a=q()d=q()J=q()C=q()T=O(-62456)v[C]=T T={b,w}w=T T=Q(12564415,{L,C})v[d]=T T=Y(16511871,{})v[J]=T T=W(8423380,{J})v[a]=T T,b=nil,O(-62465)v[R]=T T=o[b]h={T(w)}Z,T,b,i=h[3],12262430,h[1],h[2]h=b end else if T<5239920 then A,V,Z,H=O(-62454),O(-62505),O(-62470),O(-62472)i=o[Z]z=o[H]H=O(-62486)j=z[H]H=O(-62454)z=j(w,H)M=v[L]r=v[C]H=O(-62495)U=A..r G=M..U T=8348756 j=H..G N=z..j h=V..N Z=i(h)else d,R=J(w,d)T=d and 14890129 or 6239517 end end end else if 7908309>T then if T>6236443 then if 7068612>T then w=not L T=w and 12944232 or 1803524 else w,b,R,J=O(-62469),O(-62489),O(-62501),O(-62494)T=o[b]L=v[g[1]]d=o[J]a=o[R]R={a()}J=d(X(R))C=w..J x=L..C L=O(-62475)L=T[L]b={L(T,x)}T,b=o[O(-62457)],{X(b)}end else if T<5578776 then T=nil b={T}T=o[O(-62502)]elseif T<5923960 then a,T=O(-62488),2156435 J=x==a w=J else T=8985548 d=v[g[1]]J=d(L)w=not J b=w end end else if 8386068>T then if 7955126>T then Z=w[i]T=not Z T,R=T and 16516982 or 9963331,J elseif T<8170049 then T=C T,b=10978266,L else V,j,z,H,N=O(-62463),O(-62476),O(-62496),O(-62493),O(-62500)Z=E(4389650,{})i=q()v[i]=Z Z=Y(16633101,{i,a,d;R})G=v[L]H=z[H]M=v[C]U=v[R]H=H(z,G,M,U)M,G,z=O(-62491),O(-62497),O(-62464)h={[V]=N;[j]=H,[z]=Z,[G]=M}N=O(-62492)V=Z(N)N=V()V=N(h)N=not V T=N and 3342116 or 9971234 end else if T<8471419 then b=O(-62503)x=q()v[x]=k[1]C=e(7897708,{x})T=o[b]w={T(C)}b=w[1]C,L=b,w[2]b,T=C,C and 6233370 or 8985548 else T,b=o[O(-62461)],{d}end end end end else if T>11708887 then if T>14975080 then if 16514426>T then if T<15252649 then T,N,V=12262430,nil,nil elseif T<15978569 then b,T={C},o[O(-62477)]else w,x=O(-62451),k[1]C=o[w]w=C(x)C=O(-62458)L=w~=C T,b=L and 10978266 or 9172318,L end else if T<16575041 then T=4241424~=8618556 w[i]=T h=1 Z=#C T=Z+h Z=i C[T]=Z T=9963331 else x,T=k[1],nil L,b=T,nil C=b b=O(-62465)T=o[b]J=v[g[1]]a={J(x)}J={T(X(a))}T,d,w,b=5254526,J[3],J[2],J[1]J=b end end else if 12977392>T then if T<12413422 then Z,N=h(i,Z)T=Z and 13010552 or 2915994 elseif T<12754323 then T,x,d=O(-62460),k[1],O(-62493)d=T[d]C=v[g[1]]L=k[2]w=v[g[2]]b={d(T,C,w,x,L)}b,T={X(b)},o[O(-62481)]else G,T,d,N,h=O(-62472),1803524,O(-62470),O(-62471),O(-62498)w=o[d]H=o[G]G=O(-62486)z=H[G]a=O(-62462)G=v[g[1]]M=G(x)G=O(-62484)H=z(M,G)z=O(-62468)j=H..z V=N..j Z=h..V R=x..Z J=a..R d=w(J)end else if T<13950340 then G=O(-62455)T=v[a]V=Z z=v[d]H={z(N,G)}j=T(X(H))T=j and 8585055 or 15060032 else T=v[g[2]]a=d Z=v[g[3]]V=v[g[4]]h={Z(V,R)}i=T(X(h))L=i T=L and 10210184 or 9878759 end end end else if 9921045>T then if T<9078933 then if T<8649589 then V,T=nil,N N=nil v[R]=T T=2915994 elseif 8849836>T then J,i=a(d,J)T=J and 7918910 or 15445267 else T=b and 1702162 or 5543001 end else if T<9525538 then J=0 d=#x w=d==J C=T T,L=w and 7991343 or 788699,w else R,T,a=nil,5254526,nil end end else if T<10594225 then if 9967282>T then R,T,i=nil,8714124,nil elseif T<10090709 then C=y(C)L=y(L)j=O(-62487)R=y(R)T=o[O(-62479)]J=y(J)a=y(a)N=Z(j)w=nil d=y(d)j=N()N=j(h)V=nil i=y(i)b,h,Z={},nil,nil else T=R R,C=nil,T T,a=6239517,nil end else if 11066805>T then b,T={b},o[O(-62467)]else a,z,Z,N=O(-62470),O(-62494),O(-62449),O(-62450)w=o[a]j=o[z]T=8519459 z=j(J)V=N..z h=C..V R=Z..h a=w(R)end end end end end end T=#D return X(b)end,function(o)x[o]=x[o]-1 if 0==x[o]then x[o],v[o]=nil,nil end end,function(o)local O,T=1,o[1]while T do x[T],O=x[T]-1,O+1 if x[T]==0 then x[T],v[T]=nil,nil end T=o[O]end end return(d(5178567,{}))(X(b))end)({...},getmetatable,unpack or table[O(-62485)],newproxy,setmetatable,getfenv and getfenv()or _ENV,select)end)(...)
+--[[
+    Cora • Loader
+    Execute this. Pulls every module from your repo and boots the UI.
+    Repo: github.com/2in6/cora
+    Layout-agnostic: finds each module whether it's at root, src/, or src/tabs/.
+--]]
+
+local USER     = "2in6"
+local REPO     = "cora"
+local BRANCHES = { "main", "master" }
+
+local function raw(branch, path)
+    return ("https://raw.githubusercontent.com/%s/%s/%s/%s"):format(USER, REPO, branch, path)
+end
+
+local function looksLike404(s)
+    return type(s) ~= "string" or #s == 0 or s:match("^404") ~= nil or s == "Not Found"
+end
+
+local function get(url)
+    local ok, body = pcall(function()
+        return game:HttpGet(url .. "?t=" .. tostring(tick()))
+    end)
+    if ok and not looksLike404(body) then return body end
+    return nil
+end
+
+-- Find the branch that actually has the repo
+local BRANCH
+for _, b in ipairs(BRANCHES) do
+    if get(raw(b, "loader.lua")) then BRANCH = b break end
+end
+if not BRANCH then
+    error("[Cora] Repo not found on branches " .. table.concat(BRANCHES, "/")
+        .. ". Check files are pushed to github.com/" .. USER .. "/" .. REPO)
+end
+
+-- Build candidate paths for a module name so layout doesn't matter
+local function candidates(path)
+    local file = path:match("([^/]+)$")
+    local list, seen = {}, {}
+    for _, c in ipairs({ path, file, "src/" .. file, "src/tabs/" .. file }) do
+        if not seen[c] then seen[c] = true; list[#list + 1] = c end
+    end
+    return list
+end
+
+local function fetch(path)
+    local src, found
+    for _, c in ipairs(candidates(path)) do
+        src = get(raw(BRANCH, c))
+        if src then found = c break end
+    end
+    if not src then
+        error("[Cora] Could not find '" .. path .. "' anywhere in the repo "
+            .. "(tried: " .. table.concat(candidates(path), ", ") .. ")")
+    end
+    local chunk, err = loadstring(src)
+    if not chunk then
+        error("[Cora] Failed to compile " .. found .. ": " .. tostring(err))
+    end
+    return chunk
+end
+
+local Cora = {
+    Version = "v1.7.0",
+    Base    = ("https://raw.githubusercontent.com/%s/%s/%s/"):format(USER, REPO, BRANCH),
+    fetch   = fetch,
+    MoonURL = "https://i.ibb.co/DDF8bL5Q/bedtime-1000dp-E3-E3-E3-FILL0-wght400-GRAD0-opsz48.png",
+}
+
+-- Main — loads Obsidian, builds the window + tabs
+fetch("main.lua")()(Cora)
